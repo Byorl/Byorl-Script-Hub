@@ -1,0 +1,120 @@
+repeat wait() until game:IsLoaded()
+
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local RunService = game:GetService("RunService")
+
+
+getgenv().settingsTable = {
+    Enabled = true, -- true or false
+    autoReplay = true, -- true or false
+    infiniteFarm = true, -- true or false
+    worldLevel = "Infinite", -- "Infinite" or a number between 1 and 6
+    worldType = "CS", -- World Types: SS (Spirit Society), SI (Sand Island), NI (Namik Invasion), SF (Shinobi Forest)
+    waveLeave = "80" -- Wave to leave at
+}
+
+local worldTypeMapping = {
+    ["SS"] = "Spirit Society",
+    ["SI"] = "Sand Island",
+    ["NI"] = "Namik Invasion",
+    ["SF"] = "Shinobi Forest",
+    ["CS"] = "Cursed School",
+}
+
+
+
+local function checkForBattleHUDScreen()
+    local battleHUDScreen = game.Players.LocalPlayer.PlayerGui:FindFirstChild("BattleHUD")
+
+    if getgenv().settingsTable.infiniteFarm == true then
+        if battleHUDScreen and battleHUDScreen.ELFrame.WaveNum.Text == "WAVE:"..getgenv().settingsTable.waveLeave then
+            game:GetService("Players").LocalPlayer.BattleInput:FireServer("quitinfinite")
+            return true
+        end
+
+        return false
+    end
+end
+
+
+
+local function checkForVictoryScreen()
+    local playerGui = game.Players.LocalPlayer.PlayerGui
+    local victoryScreen = playerGui:FindFirstChild("VictoryScreenNew")
+
+    if getgenv().settingsTable.Enabled == true then
+        if getgenv().settingsTable.autoReplay == true then
+            if victoryScreen and victoryScreen.DecisionFrame.Visible then
+                wait(1)
+                local replayButton = victoryScreen.DecisionFrame.Buttons.Replay
+
+                -- Assuming getconnections is a custom function that retrieves event connections
+                local events = {"Activated", "MouseButton1Click", "MouseButton1Down", "MouseButton1Up"}
+                for _, eventName in ipairs(events) do
+                    pcall(function()
+                        for _, conn in ipairs(getconnections(replayButton[eventName])) do
+                            conn:Fire()
+                        end
+                    end)
+                end
+                return true
+            end
+
+            return false
+        end 
+    end
+end
+
+
+
+if getgenv().settingsTable.Enabled == true then
+    if game.PlaceId == 6068961298 then
+        wait(6)
+        local shuttles = game:GetService("Workspace").Mechanisms.Shuttles
+        local player = game.Players.LocalPlayer
+        local worldTypeString = worldTypeMapping[getgenv().settingsTable.worldType]
+        local worldLevel = getgenv().settingsTable.worldLevel
+    
+        if worldLevel and worldTypeString then
+            for i = 1, 8 do
+                local shuttle = shuttles:FindFirstChild(tostring(i))
+                if shuttle and shuttle.Screen.Surface.Status.Bar.TimeLeft.Text == "EMPTY" then
+                    player.Character.HumanoidRootPart.CFrame = shuttle.Screen.CFrame
+                    wait(1)
+                    
+                    for j = 1, 2 do
+                        local ohTable2 = {
+                            ["WorldType"] = worldTypeString,
+                            ["Level"] = worldLevel,
+                            ["LaunchShuttle"] = true
+                        }
+                        game:GetService("Players").LocalPlayer.Input:FireServer("ManageShuttle", ohTable2)
+                        wait(1)
+                    end
+                    break
+                end
+            end
+        end
+    end
+
+
+
+    local function startHeartbeatCheck(conditionCheckFunc)
+        local heartbeatConnection
+        heartbeatConnection = RunService.Heartbeat:Connect(function()
+            if conditionCheckFunc() then
+                heartbeatConnection:Disconnect()
+            end
+        end)
+    end
+
+
+    if not checkForBattleHUDScreen() then
+        startHeartbeatCheck(checkForBattleHUDScreen)
+    end
+
+    if not checkForVictoryScreen() then
+        startHeartbeatCheck(checkForVictoryScreen)
+    end
+end
