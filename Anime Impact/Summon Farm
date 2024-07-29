@@ -1,0 +1,114 @@
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local RunService = game:GetService("RunService")
+
+
+local function SendMessageEMBED(url, embed)
+    local headers = {
+        ["Content-Type"] = "application/json"
+    }
+    local data = {
+        ["embeds"] = {
+            {
+                ["title"] = embed.title,
+                ["description"] = embed.description,
+                ["color"] = embed.color,
+                ["fields"] = embed.fields,
+                ["footer"] = {
+                    ["text"] = embed.footer and embed.footer.text or ""
+                }
+            }
+        }
+    }
+    local body = HttpService:JSONEncode(data)
+    local response = request({
+        Url = url,
+        Method = "POST",
+        Headers = headers,
+        Body = body
+    })
+end
+
+-- Function to notify about a Mythic or Secret item received
+local function notifyItemReceived(itemName, itemType)
+    local playerUsername = tostring(Players.LocalPlayer)
+    local url = "https://discord.com/api/webhooks/1163876651160047687/3wz2GTNzMQhe0Lfk6OlSMwZ7BpabfFfcjTgSa48XaPryEQd0bhtMHxZRU_7KssMMPob0"
+    local embed = {
+        ["color"] = 65280, -- Green color
+        ["fields"] = {
+            {
+                ["name"] = "Item Name",
+                ["value"] = itemName
+            },
+            {
+                ["name"] = "Player Username",
+                ["value"] = playerUsername
+            }
+        },
+        ["footer"] = {
+            ["text"] = "Notification System"
+        }
+    }
+
+    -- Adjust the message based on the item type
+    if itemType == "Mythic" then
+        embed["title"] = itemType .. " Item Received - " .. playerUsername
+        embed["description"] = playerUsername .. " has received a **" .. itemType .. "** item!"
+    elseif itemType == "Secret" then
+        embed["title"] = "OMG YOU JUST PULLED SOMETHING INSANE!!!"
+        embed["description"] = "<@1074804315778195588> " .. playerUsername .. " has received a **" .. itemType .. "** item!"
+        embed["color"] = 16711680 -- Red color for emphasis
+    end
+
+    SendMessageEMBED(url, embed)
+end
+
+
+local codes = {"RELEASE", "WEHERE", "2MVISITS!!", "3MVISITS!!", "5MVISITS!!", "30KLIKEZ!!"}
+for _, code in ipairs(codes) do
+    game:GetService("ReplicatedStorage").Requests.RedeemCode:FireServer(code)
+    wait(1) -- Assuming wait is necessary for server processing; adjust as needed
+end
+
+
+game:GetService("Players").LocalPlayer.Input:FireServer("SummonTP")
+
+
+local settings = {"RareAutoSell", "EpicAutoSell", "LegendaryAutoSell"}
+for _, setting in ipairs(settings) do
+    game:GetService("Players").LocalPlayer.Input:FireServer("ChangeSetting", {["Setting"] = setting})
+end
+
+
+local ohString1 = "Summon"
+local ohTable2 = {["Banner"] = "Regular", ["Amount"] = 10}
+local desiredNames = {"Goko (Namak)", "Teen Guhen", "Ceru", "Croc", "Eneru", "Narooto (Timeskip)", "Jonin Minatu", "Sonade", "Pein", "Aizo", "Byakuyo"}
+local excludeNames = {} -- Add names to exclude here
+
+
+local function isDesiredNamePresent()
+    for _, child in pairs(game:GetService("Players").LocalPlayer.PlayerGui.HUD.TeamEditor.List.Unitlist.ScrollingFrame:GetChildren()) do
+        if child:FindFirstChild("UnitName") then
+            local unitName = child.UnitName.Text
+            if table.find(desiredNames, unitName) and not table.find(excludeNames, unitName) then
+                return unitName -- Return the name of the found unit
+            end
+        end
+    end
+    return nil -- Return nil if no desired unit is found
+end
+
+
+while true do
+    game:GetService("Players").LocalPlayer.Input:FireServer(ohString1, ohTable2)
+    wait(0.5) -- Adjust based on actual requirement for server response time
+    local foundUnitName = isDesiredNamePresent()
+    if foundUnitName then
+        print("Found a desired unit: " .. foundUnitName)
+        notifyMythicItemReceived(foundUnitName) -- Uncomment and adjust as necessary
+        break
+    end
+end
+
+
+
