@@ -1,0 +1,98 @@
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+
+local player = Players.LocalPlayer
+local scrollingFrame = game:GetService("Players").LocalPlayer.PlayerGui.Inventory.Inventory.ScrollingFrame
+
+local function SendMessage(url, message, embed)
+    local data = {}
+    if message then data["content"] = message end
+    if embed then data["embeds"] = {embed} end
+
+    local headers = {["Content-Type"] = "application/json"}
+    local body = HttpService:JSONEncode(data)
+    request({
+        Url = url,
+        Method = "POST",
+        Headers = headers,
+        Body = body
+    })
+    print("Sent")
+end
+
+local function createEmbedMessage()
+    local fields = {}
+    local categories = {
+        {"Secrets", {}},
+        {"Artifacts", {}},
+        {"Candies", {}},
+        {"Potions", {}},
+        {"Soul Tickets", {}},
+        {"Consumables", {}}
+    }
+
+
+    for _, child in ipairs(scrollingFrame:GetChildren()) do
+        if child:IsA("ImageButton") and child.Name ~= "Template" then
+            local itemName = child.Name
+            local itemAmount = child:FindFirstChild("Amount") and child.Amount.Text or "No amount"
+            local formattedItem = string.format("**%s** %s", itemName, itemAmount:lower())
+
+            if itemName == "2024 Release Egg" then
+                table.insert(categories[1][2], formattedItem) -- Secrets
+            elseif itemName:find("Candy") then
+                table.insert(categories[3][2], formattedItem) -- Candies
+            elseif itemName:find("Potion") then
+                table.insert(categories[4][2], formattedItem) -- Potions
+            elseif itemName:find("Ticket") then
+                table.insert(categories[5][2], formattedItem) -- Soul Tickets
+            elseif itemName == "Costume Token" or itemName == "Match Speed Token" or itemName == "Soul Badge" then
+                table.insert(categories[6][2], formattedItem) -- Consumables
+            else
+                table.insert(categories[2][2], formattedItem) -- Artifacts
+            end
+        end
+    end
+    
+    for _, categoryInfo in ipairs(categories) do
+        local categoryName, items = categoryInfo[1], categoryInfo[2]
+        if #items > 0 then
+            if categoryName == "Consumables" then
+
+                local concatenatedItems = table.concat(items, ", ")
+
+                table.insert(fields, {name = categoryName, value = concatenatedItems, inline = false})
+                categoryName = "" 
+            else
+                local itemListString = table.concat(items, ", ")
+                table.insert(fields, {name = categoryName, value = itemListString, inline = false})
+                if categoryName ~= "Consumables" then
+                    table.insert(fields, {name = "", value = "", inline = false})
+                end
+            end
+        end
+    end
+
+    local gemsText = player.PlayerGui.HUD.Menu.Resource.Gem.Gems.Text
+    local coinsText = player.PlayerGui.HUD.Menu.Resource.Coins.Coins.Text
+
+    table.insert(fields, {name = "", value = "", inline = false})
+    table.insert(fields, {name = "", value = "", inline = false})
+    table.insert(fields, {name = "", value = "**Gems:** " .. gemsText:lower(), inline = true})
+    table.insert(fields, {name = "", value = "**Coins:** " .. coinsText:lower(), inline = true})
+
+    return {
+        title = "Inventory Items",
+        description = "Here are the items in your inventory.",
+        color = 65280,
+        fields = fields,
+        footer = {text = "Inventory check completed"}
+    }
+end
+
+-- URL of your webhook
+local webhookUrl = "https://discord.com/api/webhooks/1163876651160047687/3wz2GTNzMQhe0Lfk6OlSMwZ7BpabfFfcjTgSa48XaPryEQd0bhtMHxZRU_7KssMMPob0"
+
+-- Create and send the embed message
+local embedMessage = createEmbedMessage()
+SendMessage(webhookUrl, nil, embedMessage)
