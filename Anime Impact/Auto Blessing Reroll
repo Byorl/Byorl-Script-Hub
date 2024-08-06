@@ -1,0 +1,51 @@
+local player = game.Players.LocalPlayer
+local blessingTextLabel = player.PlayerGui.BlessingReroll.Frame.Middle.Blessing
+
+local function checkBlessingText()
+    while true do
+        local blessingText = blessingTextLabel.Text
+        
+        if blessingText == "Emperor" or "Immortal" then
+            break
+        end
+
+        if blessingText ~= "Emperor" or "Immortal" then
+            local ohString1 = "RerollBlessing"
+            local ohTable2 = {
+                ["UnitName"] = "TojiEvo",
+                ["Roll"] = true,
+                ["UID"] = "65383598-2ad1-4389-b92d-84c837541afb" --UID of unit to Reroll
+            }
+            
+            game:GetService("Players").LocalPlayer.Input:FireServer(ohString1, ohTable2)
+        end
+
+        if blessingText == "Sniper" or blessingText == "Unity" or blessingText == "Pierce" or blessingText == "Ghost" or blessingText == "Titan" or blessingText == "Dragon" then
+            local ohString1 = "RerollBlessing"
+            local ohTable2 = {
+                ["UnitName"] = "TojiEvo",
+                ["Roll"] = true,
+                ["UID"] = "65383598-2ad1-4389-b92d-84c837541afb" --UID of unit to Reroll
+            }
+            
+            game:GetService("Players").LocalPlayer.Input:FireServer(ohString1, ohTable2)
+
+            task.wait(1)
+
+            local OptionPromptButton = player.PlayerGui.OptionPrompt.Prompt.Yes
+
+            local events = {"Activated", "MouseButton1Click", "MouseButton1Down", "MouseButton1Up"}
+            for _, eventName in ipairs(events) do
+                pcall(function()
+                    for _, conn in ipairs(getconnections(OptionPromptButton[eventName])) do
+                        conn:Fire()
+                    end
+                end)
+            end
+        end
+        
+        task.wait(1)
+    end
+end
+
+checkBlessingText()
