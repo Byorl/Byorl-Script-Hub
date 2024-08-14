@@ -1,0 +1,55 @@
+repeat task.wait(0.5) until game:IsLoaded()
+
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+local function SendMessage(url, message)
+    local headers = {
+        ["Content-Type"] = "application/json"
+    }
+    local data = {
+        ["content"] = message
+    }
+    local body = HttpService:JSONEncode(data)
+    local response = request({
+        Url = url,
+        Method = "POST",
+        Headers = headers,
+        Body = body
+    })
+end
+
+
+local function notifyKuzmaAdded()
+    local url = "https://discord.com/api/webhooks/1163876651160047687/3wz2GTNzMQhe0Lfk6OlSMwZ7BpabfFfcjTgSa48XaPryEQd0bhtMHxZRU_7KssMMPob0"
+    local message = "Kuzma has spawned!||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​|| <@1074804315778195588> <@774571745150631986> <@625364748996968459>"
+
+    SendMessage(url, message)
+
+getgenv().notKuzmafound = false
+
+local function monitorNPCsFolder()
+    while true do
+        local NPCsFolder = Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("NPCs")
+        if NPCsFolder then
+            NPCsFolder.ChildAdded:Connect(function(child)
+                if child.Name == "Kuzma" then
+                    if getgenv().notKuzmafound == false then
+                        getgenv().notKuzmafound = true
+                        notifyKuzmaAdded()
+                    end
+                else
+                    getgenv().notKuzmafound = false     
+                end
+            
+            end)
+            break
+        else
+            warn("NPCs folder not found, retrying...")
+        end
+        task.wait(1) 
+    end
+end
+monitorNPCsFolder()
