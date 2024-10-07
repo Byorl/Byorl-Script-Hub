@@ -2294,514 +2294,224 @@ getgenv().UsingMainAccountFarming = function()
     end)
 end
 
+-- Utility functions
+local function fireProximityPrompts(item)
+    for _,v in pairs(item:GetDescendants()) do
+        if v:IsA("ProximityPrompt") then
+            v.HoldDuration = 0
+            v:InputHoldBegin()
+            v:InputHoldEnd()
+        end
+    end
+end
+
+local function resetPlayer()
+    game.Players.LocalPlayer.Character.Humanoid.Health = 0
+end
+
+local function teleportToPosition(position)
+    local player = game.Players.LocalPlayer
+    player.Character.HumanoidRootPart.CFrame = CFrame.new(position)
+end
+
+local function switchToStand(standName)
+    local rs = game:GetService("ReplicatedStorage")
+    local lplayer = game.Players.LocalPlayer
+    for i = 1, 100 do
+        local slotText = lplayer.PlayerGui.StandStorage.Outer.Inner.Inner["Slot"..i].Text.Text
+        if slotText == standName then
+            local args = {"Slot"..i}
+            if i <= 6 then
+                rs.StorageRemote["Slot"..i]:FireServer()
+            else
+                rs.StorageRemote.UseStorageExtra:FireServer(unpack(args))
+            end
+            return
+        end
+    end
+end
+
+-- Main function
 getgenv().UsingDekuAutofarm1 = function()
+    local rs = game:GetService("ReplicatedStorage")
+    local players = game:GetService("Players")
+    local workspace = game:GetService("Workspace")
+    local lplayer = players.LocalPlayer
+
+    -- Accept and claim quests
     task.spawn(function()
-        while getgenv().AutofarmOnDeku1 == true do
+        while getgenv().AutofarmOnDeku1 do
             pcall(function()
-                local args = {[1] = 33};
-                game:GetService("ReplicatedStorage"):WaitForChild("QuestRemotes"):WaitForChild("AcceptQuest"):FireServer(unpack(args));
-                local args = {[1] = 33};
-                game:GetService("ReplicatedStorage"):WaitForChild("QuestRemotes"):WaitForChild("ClaimQuest"):FireServer(unpack(args));            
+                local args = {33}
+                rs:WaitForChild("QuestRemotes"):WaitForChild("AcceptQuest"):FireServer(unpack(args))
+                rs:WaitForChild("QuestRemotes"):WaitForChild("ClaimQuest"):FireServer(unpack(args))
             end)
-            task.wait(0.35);
+            task.wait(0.35)
         end
     end)
-    
+
+    -- Handle item purchasing and selling
     task.spawn(function()
-        while getgenv().AutofarmOnDeku1 == true do
+        while getgenv().AutofarmOnDeku1 do
             pcall(function()
-                if game:GetService("Players").LocalPlayer.Data.Mastery.Value < 3 then
-                    if game:GetService("Players").LocalPlayer.Data.Cash.Value > 75 then
-                        local args = {[1] = "99"};
-                        game:GetService("ReplicatedStorage"):WaitForChild("BuyItemRemote"):WaitForChild("Rokakaka"):FireServer(unpack(args));
+                local backpack = lplayer:WaitForChild("Backpack")
+                if lplayer.Data.Mastery.Value < 3 and lplayer.Data.Cash.Value > 75 then
+                    rs:WaitForChild("BuyItemRemote"):WaitForChild("Rokakaka"):FireServer("99")
+                end
+
+                for _, item in ipairs(backpack:GetChildren()) do
+                    if table.find({
+                        "Arrow", "Barrel", "Rokakaka", "Stop Sign", "Mysterious Camera",
+                        "Haunted Sword", "Spin Manual", "Hamon Manual", "Stone Mask",
+                        "Bomu Bomu Devil Fruit", "Mochi Mochi Devil Fruit", "Bari Bari Devil Fruit"
+                    }, item.Name) then
+                        rs:WaitForChild("GlobalUsedRemotes"):WaitForChild("SellItem"):FireServer(item.Name)
                     end
-    
-                    for i,v in ipairs(game:GetService("Players").LocalPlayer:WaitForChild("Backpack"):GetChildren()) do
-                        if table.find({"Arrow","Barrel","Rokakaka","Stop Sign","Mysterious Camera","Haunted Sword","Spin Manual","Hamon Manual","Stone Mask","Bomu Bomu Devil Fruit","Mochi Mochi Devil Fruit","Bari Bari Devil Fruit"},v.Name) then
-                            game:GetService("ReplicatedStorage"):WaitForChild("GlobalUsedRemotes"):WaitForChild("SellItem"):FireServer(v.Name);
+                end
+
+                getgenv().HidePurchasePrompt()
+            end)
+            task.wait(0.35)
+        end
+    end)
+
+    -- Attack enemies
+    task.spawn(function()
+        while getgenv().AutofarmOnDeku1 do
+            pcall(function()
+                for _, enemy in pairs(workspace.Living:GetChildren()) do
+                    if table.find({
+                        "Bygone", "Angelica", "AngelicaWeak", "BlackSilence"
+                    }, enemy.Name) and enemy:FindFirstChild("Humanoid") then
+                        enemy.Humanoid.Health = 0
+                    end
+                end
+            end)
+            task.wait(0.015)
+        end
+    end)
+
+    -- Handle Roland and Deku
+    task.spawn(function()
+        while getgenv().AutofarmOnDeku1 do
+            pcall(function()
+                local roland = workspace.Living:FindFirstChild("Roland")
+                local animeking221 = workspace.Living:FindFirstChild("animeking221")
+                local iceIsNlCE = workspace.Living:FindFirstChild("IceIsNlCE")
+
+                if roland then
+                    local animekingParticipated = animeking221 and roland:FindFirstChild("Participated") and roland.Participated:FindFirstChild("animeking221")
+                    local iceIsNlCEParticipated = iceIsNlCE and roland:FindFirstChild("Participated") and roland.Participated:FindFirstChild("IceIsNlCE")
+
+                    local shouldAttack = animeking221 and iceIsNlCE and animekingParticipated and iceIsNlCEParticipated
+                                    or not animeking221 and not iceIsNlCE
+                                    or animekingParticipated or iceIsNlCEParticipated
+
+                    if shouldAttack and not workspace.Item2:FindFirstChild("OA's Grace") and lplayer.Data.StandName.Value == "Shinra Kusakabe" then
+                        if lplayer.Character.Humanoid.Health ~= 0 then
+                            local rolandHumanoid = roland:FindFirstChild("Humanoid")
+                            if rolandHumanoid and rolandHumanoid.Health ~= rolandHumanoid.MaxHealth then
+                                task.spawn(function()
+                                    task.wait(4)
+                                    rolandHumanoid.Health = 0
+                                end)
+                            end
+
+                            local rolandBoss = roland:FindFirstChild("HumanoidRootPart")
+                            teleportToPosition(rolandBoss.Position - rolandBoss.CFrame.lookVector * 7)
+                            rs:WaitForChild("ShinraRemote"):WaitForChild("Ignition"):FireServer()
+                            rs:WaitForChild("ShinraRemote"):WaitForChild("Punch"):FireServer()
+                            rs:WaitForChild("ShinraRemote"):WaitForChild("Fierce"):FireServer()
+                            rs:WaitForChild("ShinraRemote"):WaitForChild("Corna"):FireServer()
+                        else
+                            task.wait(3.15)
                         end
                     end
-    
-                    getgenv().HidePurchasePrompt();
                 end
             end)
-            task.wait(0.35);
+            task.wait(0.15)
         end
     end)
-    
+
+    -- Handle Deku specific logic
     task.spawn(function()
-        while getgenv().AutofarmOnDeku1 == true do
+        while getgenv().AutofarmOnDeku1 do
             pcall(function()
-                for _,x in pairs(workspace.Living:GetChildren()) do
-                    if (x.Name == "Bygone" or x.Name == "Angelica" or x.Name == "AngelicaWeak" or x.Name == "BlackSilence") and x:FindFirstChild("Humanoid") then
-                        x.Humanoid.Health = 0;
-                    end
-                end
-            end)
-            task.wait(0.015);
-        end
-    end)
-    
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku1 == true do
-            pcall(function()
-                local Lplayer = game:GetService("Players").LocalPlayer;
-                if game:GetService("Workspace").Living:FindFirstChild("Roland") and not game:GetService("Workspace").Item2:FindFirstChild("OA's Grace") and not Lplayer.Backpack:FindFirstChild("OA's Grace") and Lplayer.Data.StandName.Value == "Shinra Kusakabe" then
-                    if game.Players.LocalPlayer.Character.Humanoid.Health ~= 0 then
-                        local RolandHumanoid = game:GetService("Workspace").Living:FindFirstChild("Roland").Humanoid
-                        if RolandHumanoid and RolandHumanoid.Health ~= RolandHumanoid.MaxHealth then
-                            task.spawn(function()task.wait(4);
-                                RolandHumanoid.Health = 0;
-                            end)
-                        end
-                        local RolandBoss = game:GetService("Workspace").Living:FindFirstChild("Roland"):FindFirstChild("HumanoidRootPart");
-                        Lplayer.Character.HumanoidRootPart.CFrame = CFrame.new(RolandBoss.Position - RolandBoss.CFrame.lookVector * 7,RolandBoss.Position);
-                        game:GetService("ReplicatedStorage"):WaitForChild("ShinraRemote"):WaitForChild("Ignition"):FireServer();
-                        game:GetService("ReplicatedStorage"):WaitForChild("ShinraRemote"):WaitForChild("Punch"):FireServer();
-                        game:GetService("ReplicatedStorage"):WaitForChild("ShinraRemote"):WaitForChild("Fierce"):FireServer();
-                        game:GetService("ReplicatedStorage"):WaitForChild("ShinraRemote"):WaitForChild("Corna"):FireServer();
-                    else
-                        task.wait(3.15);
-                    end
-                end
-            end)
-            task.wait(0.15);
-        end
-    end)
-    
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku1 == true do
-            pcall(function()
-                local Lplayer = game:GetService("Players").LocalPlayer;
-                if game:GetService("Workspace").Living:FindFirstChild("Deku") and not game:GetService("Workspace").Item2:FindFirstChild("OA's Grace") and not Lplayer.Backpack:FindFirstChild("OA's Grace") and Lplayer.Data.StandName.Value == "Shinra Kusakabe" then
-                    if game.Players.LocalPlayer.Character.Humanoid.Health ~= 0 and not workspace.Living.Deku.CDValues:FindFirstChild("Blocking") then
-                        local DekuHumanoid = game:GetService("Workspace").Living:FindFirstChild("Deku").Humanoid
-                        if DekuHumanoid and DekuHumanoid.Health ~= DekuHumanoid.MaxHealth then
+                local deku = workspace.Living:FindFirstChild("Deku")
+                if deku and not workspace.Item2:FindFirstChild("OA's Grace") and not lplayer.Backpack:FindFirstChild("OA's Grace") and lplayer.Data.StandName.Value == "Shinra Kusakabe" then
+                    if lplayer.Character.Humanoid.Health ~= 0 and not deku.CDValues:FindFirstChild("Blocking") then
+                        local dekuHumanoid = deku.Humanoid
+                        if dekuHumanoid and dekuHumanoid.Health ~= dekuHumanoid.MaxHealth then
                             task.spawn(function()
-                                DekuHumanoid.Health = 0;
+                                dekuHumanoid.Health = 0
                             end)
                         end
-                        local DekuBoss = game:GetService("Workspace").Living:FindFirstChild("Deku"):FindFirstChild("HumanoidRootPart");
-                        Lplayer.Character.HumanoidRootPart.CFrame = CFrame.new(DekuBoss.Position - DekuBoss.CFrame.lookVector * 7,DekuBoss.Position);
-                        game:GetService("ReplicatedStorage"):WaitForChild("ShinraRemote"):WaitForChild("Ignition"):FireServer();
-                        game:GetService("ReplicatedStorage"):WaitForChild("ShinraRemote"):WaitForChild("Punch"):FireServer();
-                        game:GetService("ReplicatedStorage"):WaitForChild("ShinraRemote"):WaitForChild("Fierce"):FireServer();
-                        game:GetService("ReplicatedStorage"):WaitForChild("ShinraRemote"):WaitForChild("Corna"):FireServer();
+                        local dekuBoss = deku:FindFirstChild("HumanoidRootPart")
+                        teleportToPosition(dekuBoss.Position - dekuBoss.CFrame.lookVector * 7)
+                        rs:WaitForChild("ShinraRemote"):WaitForChild("Ignition"):FireServer()
+                        rs:WaitForChild("ShinraRemote"):WaitForChild("Punch"):FireServer()
+                        rs:WaitForChild("ShinraRemote"):WaitForChild("Fierce"):FireServer()
+                        rs:WaitForChild("ShinraRemote"):WaitForChild("Corna"):FireServer()
                     else
-                        task.wait(3.15);
+                        task.wait(3.15)
                     end
                 end
             end)
-            task.wait(0.15);
-        end
-    end)
-    
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku1 == true do
-            pcall(function()
-                local Lplayer = game:GetService("Players").LocalPlayer;
-                if not game:GetService("Workspace").Living:FindFirstChild("Deku") and not game:GetService("Workspace").Living:FindFirstChild("Roland") and not game:GetService("Workspace").Item2:FindFirstChild("OA's Grace") and not Lplayer.Backpack:FindFirstChild("OA's Grace") and not Lplayer.PlayerGui.InCombat.Enabled and Lplayer.Data.StandName.Value == "Shinra Kusakabe" then
-                    for i = 1,100 do
-                        if Lplayer.PlayerGui.StandStorage.Outer.Inner.Inner["Slot"..i].Text.Text == "OA [Stage 4]" then
-                            local args = {"Slot"..i};
-                            if i <= 6 then
-                                game:GetService("ReplicatedStorage").StorageRemote["Slot"..i]:FireServer();
-                            else
-                                game:GetService("ReplicatedStorage").StorageRemote.UseStorageExtra:FireServer(unpack(args));
-                            end
-                        end
-                    end
-                end
-            end)
-            task.wait(0.35);
-        end
-    end)
-    
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku1 == true do
-            pcall(function()
-                local Lplayer = game:GetService("Players").LocalPlayer;
-                if game:GetService("Workspace").Living:FindFirstChild("Roland") and not game:GetService("Workspace").Living:FindFirstChild("Deku") and not game:GetService("Workspace").Item2:FindFirstChild("OA's Grace") and not Lplayer.Backpack:FindFirstChild("OA's Grace") and not Lplayer.PlayerGui.InCombat.Enabled and Lplayer.Data.StandName.Value == "OA [Stage 4]" then
-                    Lplayer.Character.HumanoidRootPart.CFrame = CFrame.new(-50.88117599487305,-116.3696060180664,344.53594970703125);
-                    for i = 1,100 do
-                        if Lplayer.PlayerGui.StandStorage.Outer.Inner.Inner["Slot"..i].Text.Text == "Shinra Kusakabe" then
-                            local args = {"Slot"..i};
-                            if i <= 6 then
-                                game:GetService("ReplicatedStorage").StorageRemote["Slot"..i]:FireServer();
-                            else
-                                game:GetService("ReplicatedStorage").StorageRemote.UseStorageExtra:FireServer(unpack(args));
-                            end
-                        end
-                    end
-                end
-            end)
-            task.wait(0.035);
-        end
-    end)
-    
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku1 == true do
-                pcall(function()
-                    local Lplayer = game:GetService("Players").LocalPlayer;
-                    if not game:GetService("Workspace").Living:FindFirstChild("Deku") and not game:GetService("Workspace").Living:FindFirstChild("Roland") and not game:GetService("Workspace").Item2:FindFirstChild("OA's Grace") and not Lplayer.Backpack:FindFirstChild("OA's Grace") and not Lplayer.PlayerGui.InCombat.Enabled and Lplayer.Data.StandName.Value == "OA [Stage 4]" then
-                        Lplayer.Character.HumanoidRootPart.CFrame = CFrame.new(-7150.1806640625,-32.022640228271484,1294.813720703125);
-                        for i,v in pairs(game:GetService("Workspace").Map.RuinedCity:GetDescendants()) do
-                            if v:IsA("ProximityPrompt") then
-                                fireproximityprompt(v,0);
-                            end
-                        end
-                    end
-                end)
-            task.wait(0.35);
-        end
-    end)
-    
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku1 == true do
-            pcall(function()
-                local Lplayer = game:GetService("Players").LocalPlayer;
-                if game:GetService("Workspace").Living:FindFirstChild("Deku") and not game:GetService("Workspace").Living:FindFirstChild("Roland") and not game:GetService("Workspace").Item2:FindFirstChild("OA's Grace") and not Lplayer.Backpack:FindFirstChild("OA's Grace") and not Lplayer.PlayerGui.InCombat.Enabled and Lplayer.Data.StandName.Value == "OA [Stage 3]" then
-                    Lplayer.Character.HumanoidRootPart.CFrame = CFrame.new(-50.88117599487305,-116.3696060180664,344.53594970703125);
-                    for i = 1,100 do
-                        if Lplayer.PlayerGui.StandStorage.Outer.Inner.Inner["Slot"..i].Text.Text == "Shinra Kusakabe" then
-                            local args = {"Slot"..i};
-                            if i <= 6 then
-                                game:GetService("ReplicatedStorage").StorageRemote["Slot"..i]:FireServer();
-                            else
-                                game:GetService("ReplicatedStorage").StorageRemote.UseStorageExtra:FireServer(unpack(args));
-                            end
-                        end
-                    end
-                end
-            end)
-            task.wait(0.035);
-        end
-    end)
-    
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku1 == true do
-            pcall(function()
-                local Lplayer = game:GetService("Players").LocalPlayer;
-                if game:GetService("Workspace").Living:FindFirstChild("Roland") and not game:GetService("Workspace").Living:FindFirstChild("Deku") and not game:GetService("Workspace").Item2:FindFirstChild("OA's Grace") and not Lplayer.Backpack:FindFirstChild("OA's Grace") and not Lplayer.PlayerGui.InCombat.Enabled and Lplayer.Data.StandName.Value == "OA [Stage 3]" then
-                    Lplayer.Character.HumanoidRootPart.CFrame = CFrame.new(-50.88117599487305,-116.3696060180664,344.53594970703125);
-                    for i = 1,100 do
-                        if Lplayer.PlayerGui.StandStorage.Outer.Inner.Inner["Slot"..i].Text.Text == "Shinra Kusakabe" then
-                            local args = {"Slot"..i};
-                            if i <= 6 then
-                                game:GetService("ReplicatedStorage").StorageRemote["Slot"..i]:FireServer();
-                            else
-                                game:GetService("ReplicatedStorage").StorageRemote.UseStorageExtra:FireServer(unpack(args));
-                            end
-                        end
-                    end
-                end
-            end)
-            task.wait(0.035);
-        end
-    end)
-    
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku1 == true do
-            pcall(function()
-                local Lplayer = game:GetService("Players").LocalPlayer;
-                if not game:GetService("Workspace").Living:FindFirstChild("Deku") and not game:GetService("Workspace").Living:FindFirstChild("Roland") and not game:GetService("Workspace").Item2:FindFirstChild("OA's Grace") and Lplayer.Backpack:FindFirstChild("OA's Grace") and not Lplayer.PlayerGui.InCombat.Enabled and Lplayer.Data.StandName.Value == "Shinra Kusakabe" then
-                    Lplayer.Character.HumanoidRootPart.CFrame = CFrame.new(-50.88117599487305,-116.3696060180664,344.53594970703125);
-                    for i = 1, 100 do
-                        if Lplayer.PlayerGui.StandStorage.Outer.Inner.Inner["Slot"..i].Text.Text == "OA [Stage 3]" then
-                            local args = {"Slot"..i};
-                            if i <= 6 then
-                                game:GetService("ReplicatedStorage").StorageRemote["Slot"..i]:FireServer();
-                            else
-                                game:GetService("ReplicatedStorage").StorageRemote.UseStorageExtra:FireServer(unpack(args));
-                            end
-                        end
-                    end
-                end
-            end)
-            task.wait(0.035);
-        end
-    end)
-    
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku1 == true do
-            pcall(function()
-                local Lplayer = game:GetService("Players").LocalPlayer;
-                if not game:GetService("Workspace").Living:FindFirstChild("Deku") and not game:GetService("Workspace").Living:FindFirstChild("Roland") and not game:GetService("Workspace").Item2:FindFirstChild("OA's Grace") and Lplayer.Backpack:FindFirstChild("OA's Grace") and Lplayer.Data.StandName.Value == "OA [Stage 3]" then task.wait(0.45);
-                    Lplayer.Character.HumanoidRootPart.CFrame = CFrame.new(-50.88117599487305,-116.3696060180664,344.53594970703125);
-                    game:GetService("ReplicatedStorage"):WaitForChild("UseItem"):WaitForChild("OFA"):FireServer();
-                    task.wait(0.5);
-                    Lplayer.Character.Humanoid:EquipTool(Lplayer.Backpack:FindFirstChild("OA's Grace"));
-                    task.wait(0.35);
-                    game:GetService("ReplicatedStorage"):WaitForChild("UseItem"):WaitForChild("OFA"):FireServer();
-                    Lplayer.Character:FindFirstChild("OA's Grace"):Activate();
-                    game:GetService("ReplicatedStorage"):WaitForChild("UseItem"):WaitForChild("OFA"):FireServer();
-                end
-            end)
-            task.wait(1);
+            task.wait(0.15)
         end
     end)
 
+    -- Switch to OA Stage 4 if conditions are met
     task.spawn(function()
-        while getgenv().AutofarmOnDeku1 == true do
+        while getgenv().AutofarmOnDeku1 do
             pcall(function()
-                local Lplayer = game:GetService("Players").LocalPlayer;
-                if not game:GetService("Workspace").Living:FindFirstChild("Roland") and not game:GetService("Workspace").Living:FindFirstChild("Deku") and not game:GetService("Workspace").Item2:FindFirstChild("OA's Grace") and Lplayer.Backpack:FindFirstChild("OA's Grace") and Lplayer.Data.StandName.Value == "OA [Stage 3]" then task.wait(0.45);
-                    Lplayer.Character.HumanoidRootPart.CFrame = CFrame.new(-50.88117599487305,-116.3696060180664,344.53594970703125);
-                    game:GetService("ReplicatedStorage"):WaitForChild("UseItem"):WaitForChild("OFA"):FireServer();
-                    task.wait(0.5);
-                    Lplayer.Character.Humanoid:EquipTool(Lplayer.Backpack:FindFirstChild("OA's Grace"));
-                    task.wait(0.35);
-                    game:GetService("ReplicatedStorage"):WaitForChild("UseItem"):WaitForChild("OFA"):FireServer();
-                    Lplayer.Character:FindFirstChild("OA's Grace"):Activate();
-                    game:GetService("ReplicatedStorage"):WaitForChild("UseItem"):WaitForChild("OFA"):FireServer();
+                local hasOAsGrace = lplayer.Backpack:FindFirstChild("OA's Grace")
+                if not workspace.Living:FindFirstChild("Deku") and not workspace.Living:FindFirstChild("Roland") and not hasOAsGrace and lplayer.Data.StandName.Value == "Shinra Kusakabe" then
+                    switchToStand("OA [Stage 4]")
                 end
             end)
-            task.wait(1);
-        end
-    end)
-    
-    
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku1 == true do
-            pcall(function()
-                local Lplayer = game:GetService("Players").LocalPlayer;
-                if game:GetService("Workspace").Item2:FindFirstChild("OA's Grace") then
-                    Lplayer.Character.HumanoidRootPart.CFrame = game:GetService("Workspace").Item2:FindFirstChild("OA's Grace").CFrame;
-                    for i,v in pairs(workspace.Item2["OA's Grace"]:GetDescendants()) do
-                        if v:IsA("ProximityPrompt") then
-                            v.HoldDuration = 0;v:InputHoldBegin();v:InputHoldEnd();
-                        end
-                    end
-                end
-            end)
-            task.wait(0.35);
-        end
-    end)
-    
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku1 == true do
-            pcall(function()
-                local Lplayer = game:GetService("Players").LocalPlayer;
-                if game:GetService("Workspace").Item:FindFirstChild("Gloves") then
-                    Lplayer.Character.HumanoidRootPart.CFrame = game:GetService("Workspace").Item:FindFirstChild("Gloves").CFrame;
-                    for i,v in pairs(workspace.Item["Gloves"]:GetDescendants()) do
-                        if v:IsA("ProximityPrompt") then
-                            v.HoldDuration = 0;v:InputHoldBegin();v:InputHoldEnd();
-                        end
-                    end
-                end
-            end)
-            task.wait(0.35);
-        end
-    end)
-    
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku1 == true do
-            pcall(function()
-                local Lplayer = game:GetService("Players").LocalPlayer;
-                if not game:GetService("Workspace").Living:FindFirstChild("Deku") and not game:GetService("Workspace").Living:FindFirstChild("Roland") and Lplayer.PlayerGui.InCombat.Enabled then
-                    game.Players.LocalPlayer.Character.Humanoid.Health = 0;
-                end
-            end)
-            task.wait(1.35);
-        end
-    end)
-    
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku1 == true do
-            pcall(function()
-                local Lplayer = game:GetService("Players").LocalPlayer;
-                if Lplayer.PlayerGui.InCombat.Enabled and Lplayer.Data.StandName.Value == "OA [Stage 3]" or Lplayer.PlayerGui.InCombat.Enabled and Lplayer.Data.StandName.Value == "OA [Stage 4]" then
-                    game.Players.LocalPlayer.Character.Humanoid.Health = 0;
-                end
-            end)
-            task.wait(1.35);
-        end
-    end)    
-end
-
-getgenv().UsingDekuAutofarm2 = function()
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku2 == true do
-            pcall(function()
-                local args = {[1] = 33};
-                game:GetService("ReplicatedStorage"):WaitForChild("QuestRemotes"):WaitForChild("AcceptQuest"):FireServer(unpack(args));
-                local args = {[1] = 33};
-                game:GetService("ReplicatedStorage"):WaitForChild("QuestRemotes"):WaitForChild("ClaimQuest"):FireServer(unpack(args));            
-            end)
-            task.wait(0.35);
+            task.wait(0.35)
         end
     end)
 
+    -- Switch to Shinra Kusakabe if conditions are met
     task.spawn(function()
-        while getgenv().AutofarmOnDeku2 == true do
+        while getgenv().AutofarmOnDeku1 do
             pcall(function()
-                for _,x in pairs(workspace.Living:GetChildren()) do
-                    if (x.Name == "Bygone" or x.Name == "Angelica" or x.Name == "AngelicaWeak" or x.Name == "BlackSilence") and x:FindFirstChild("Humanoid") then
-                        x.Humanoid.Health = 0;
-                    end
+                local deku = workspace.Living:FindFirstChild("Deku")
+                local hasOAsGrace = lplayer.Backpack:FindFirstChild("OA's Grace")
+                if deku and not hasOAsGrace and not lplayer.PlayerGui.InCombat.Enabled and lplayer.Data.StandName.Value == "OA [Stage 4]" then
+                    teleportToPosition(Vector3.new(-50.88117599487305, -116.3696060180664, 344.53594970703125))
+                    switchToStand("Shinra Kusakabe")
+                    task.wait(1)
+                    teleportToPosition(Vector3.new(-38.94095230102539, -117.37751770019531, 338.93267822265625))
                 end
             end)
-            task.wait(0.015);
+            task.wait(0.35)
         end
     end)
 
+    -- Clear proximity prompts
     task.spawn(function()
-        while getgenv().AutofarmOnDeku2 == true do
+        while getgenv().AutofarmOnDeku1 do
             pcall(function()
-                local Lplayer = game:GetService("Players").LocalPlayer;
-                if game:GetService("Workspace").Living:FindFirstChild("Roland") and Lplayer.Data.StandName.Value == "Shinra Kusakabe" then
-                    if game.Players.LocalPlayer.Character.Humanoid.Health ~= 0 then
-                        local RolandHumanoid = game:GetService("Workspace").Living:FindFirstChild("Roland").Humanoid
-                        if RolandHumanoid and RolandHumanoid.Health ~= RolandHumanoid.MaxHealth then
-                            task.spawn(function()task.wait(4);
-                                RolandHumanoid.Health = 0;
-                            end)
-                        end
-                        local RolandBoss = game:GetService("Workspace").Living:FindFirstChild("Roland"):FindFirstChild("HumanoidRootPart");
-                        Lplayer.Character.HumanoidRootPart.CFrame = CFrame.new(RolandBoss.Position - RolandBoss.CFrame.lookVector * 7,RolandBoss.Position);
-                        game:GetService("ReplicatedStorage"):WaitForChild("ShinraRemote"):WaitForChild("Ignition"):FireServer();
-                        game:GetService("ReplicatedStorage"):WaitForChild("ShinraRemote"):WaitForChild("Punch"):FireServer();
-                        game:GetService("ReplicatedStorage"):WaitForChild("ShinraRemote"):WaitForChild("Fierce"):FireServer();
-                        game:GetService("ReplicatedStorage"):WaitForChild("ShinraRemote"):WaitForChild("Corna"):FireServer();
-                    else
-                        task.wait(3.15);
-                    end
-                end
+                fireProximityPrompts(workspace)
             end)
-            task.wait(0.15);
+            task.wait(0.1)
         end
     end)
-    
+
+    -- Reset player health if necessary
     task.spawn(function()
-        while getgenv().AutofarmOnDeku2 == true do
+        while getgenv().AutofarmOnDeku1 do
             pcall(function()
-                local Lplayer = game:GetService("Players").LocalPlayer;
-                if game:GetService("Workspace").Living:FindFirstChild("Deku") and Lplayer.Data.StandName.Value == "Shinra Kusakabe" then
-                    if game.Players.LocalPlayer.Character.Humanoid.Health ~= 0 and not workspace.Living.Deku.CDValues:FindFirstChild("Blocking") then
-                        local DekuHumanoid = game:GetService("Workspace").Living:FindFirstChild("Deku").Humanoid
-                        if DekuHumanoid and DekuHumanoid.Health ~= DekuHumanoid.MaxHealth then
-                            task.spawn(function()
-                                DekuHumanoid.Health = 0;
-                            end)
-                        end
-                        local DekuBoss = game:GetService("Workspace").Living:FindFirstChild("Deku"):FindFirstChild("HumanoidRootPart");
-                        Lplayer.Character.HumanoidRootPart.CFrame = CFrame.new(DekuBoss.Position - DekuBoss.CFrame.lookVector * 7,DekuBoss.Position);
-                        game:GetService("ReplicatedStorage"):WaitForChild("ShinraRemote"):WaitForChild("Ignition"):FireServer();
-                        game:GetService("ReplicatedStorage"):WaitForChild("ShinraRemote"):WaitForChild("Punch"):FireServer();
-                        game:GetService("ReplicatedStorage"):WaitForChild("ShinraRemote"):WaitForChild("Fierce"):FireServer();
-                        game:GetService("ReplicatedStorage"):WaitForChild("ShinraRemote"):WaitForChild("Corna"):FireServer();
-                    else
-                        task.wait(3.15);
-                    end
-                end
+                resetPlayer()
             end)
-            task.wait(0.15);
+            task.wait(10)
         end
     end)
 end
 
-getgenv().UsingDekuAutofarm3 = function()
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku3 == true do
-            pcall(function()
-                for _,x in pairs(workspace.Living:GetChildren()) do
-                    if (x.Name == "Bygone" or x.Name == "Angelica" or x.Name == "AngelicaWeak" or x.Name == "BlackSilence") and x:FindFirstChild("Humanoid") then
-                        x.Humanoid.Health = 0;
-                    end
-                end
-            end)
-            task.wait(0.015);
-        end
-    end)
-    
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku3 == true do
-            pcall(function()
-                local Lplayer = game:GetService("Players").LocalPlayer;
-                Lplayer.Character.HumanoidRootPart.CFrame = CFrame.new(-50.88117599487305,-116.3696060180664,344.53594970703125);
-            end)
-            task.wait(1.15);
-        end
-    end)
-    
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku3 == true do
-                pcall(function()
-                    local Lplayer = game:GetService("Players").LocalPlayer;
-                    if not game:GetService("Workspace").Living:FindFirstChild("Deku") and not game:GetService("Workspace").Living:FindFirstChild("Roland") and not game:GetService("Workspace").Item2:FindFirstChild("OA's Grace") and not Lplayer.Backpack:FindFirstChild("OA's Grace") and not Lplayer.PlayerGui.InCombat.Enabled and Lplayer.Data.StandName.Value == "OA [Stage 4]" then
-                        Lplayer.Character.HumanoidRootPart.CFrame = CFrame.new(-7150.1806640625,-32.022640228271484,1294.813720703125);
-                        for i,v in pairs(game:GetService("Workspace").Map.RuinedCity:GetDescendants()) do
-                            if v:IsA("ProximityPrompt") then
-                                fireproximityprompt(v,0);
-                            end
-                        end
-                    end
-                end)
-            task.wait(0.35);
-        end
-    end)
-    
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku3 == true do
-            pcall(function()
-                local Lplayer = game:GetService("Players").LocalPlayer;
-                if not game:GetService("Workspace").Living:FindFirstChild("Deku") and not game:GetService("Workspace").Living:FindFirstChild("Roland") and not game:GetService("Workspace").Item2:FindFirstChild("OA's Grace") and Lplayer.Backpack:FindFirstChild("OA's Grace") and Lplayer.Data.StandName.Value == "OA [Stage 3]" then task.wait(0.45);
-                    Lplayer.Character.HumanoidRootPart.CFrame = CFrame.new(-50.88117599487305,-116.3696060180664,344.53594970703125);
-                    game:GetService("ReplicatedStorage"):WaitForChild("UseItem"):WaitForChild("OFA"):FireServer();
-                    task.wait(0.5);
-                    Lplayer.Character.Humanoid:EquipTool(Lplayer.Backpack:FindFirstChild("OA's Grace"));
-                    task.wait(0.35);
-                    game:GetService("ReplicatedStorage"):WaitForChild("UseItem"):WaitForChild("OFA"):FireServer();
-                    Lplayer.Character:FindFirstChild("OA's Grace"):Activate();
-                    game:GetService("ReplicatedStorage"):WaitForChild("UseItem"):WaitForChild("OFA"):FireServer();
-                end
-            end)
-            task.wait(1);
-        end
-    end)
-    
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku3 == true do
-            pcall(function()
-                local Lplayer = game:GetService("Players").LocalPlayer;
-                if game:GetService("Workspace").Item2:FindFirstChild("OA's Grace") then
-                    Lplayer.Character.HumanoidRootPart.CFrame = game:GetService("Workspace").Item2:FindFirstChild("OA's Grace").CFrame;
-                    for i,v in pairs(workspace.Item2["OA's Grace"]:GetDescendants()) do
-                        if v:IsA("ProximityPrompt") then
-                            v.HoldDuration = 0;v:InputHoldBegin();v:InputHoldEnd();
-                        end
-                    end
-                end
-            end)
-            task.wait(0.35);
-        end
-    end)
-    
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku3 == true do
-            pcall(function()
-                local Lplayer = game:GetService("Players").LocalPlayer;
-                if not game:GetService("Workspace").Living:FindFirstChild("Deku") and not game:GetService("Workspace").Living:FindFirstChild("Roland") and Lplayer.PlayerGui.InCombat.Enabled then
-                    game.Players.LocalPlayer.Character.Humanoid.Health = 0;
-                end
-            end)
-            task.wait(1.35);
-        end
-    end)
-    
-    task.spawn(function()
-        while getgenv().AutofarmOnDeku3 == true do
-            pcall(function()
-                local Lplayer = game:GetService("Players").LocalPlayer;
-                if Lplayer.PlayerGui.InCombat.Enabled and Lplayer.Data.StandName.Value == "OA [Stage 3]" or Lplayer.PlayerGui.InCombat.Enabled and Lplayer.Data.StandName.Value == "OA [Stage 4]" then
-                    game.Players.LocalPlayer.Character.Humanoid.Health = 0;
-                end
-            end)
-            task.wait(1.35);
-        end
-    end)
-end
 
 getgenv().UsingTokensToCash = function()
     task.spawn(function()
