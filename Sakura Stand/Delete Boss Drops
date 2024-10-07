@@ -1,0 +1,19 @@
+getgenv().DeleteBossDrops = true
+
+while getgenv().DeleteBossDrops == true do
+    task.wait(0.2)
+    local workspaceItem = game:GetService("Workspace").Item
+    local durandal = workspaceItem:FindFirstChild("Durandal")
+    local zelkova = workspaceItem:FindFirstChild("Zelkova")
+    local allas = workspaceItem:FindFirstChild("Allas")
+    
+    if durandal then
+        durandal:Destroy()
+    end
+    if zelkova then
+        zelkova:Destroy()
+    end
+    if allas then
+        allas:Destroy()
+    end
+end
