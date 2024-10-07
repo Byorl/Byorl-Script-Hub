@@ -1,0 +1,52 @@
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local player = Players.LocalPlayer
+local teleportPosition = CFrame.new(-50.88117599487305, -116.3696060180664, 344.53594970703125)
+local teleportDelay = 0.5 
+
+local function isTargetPresent()
+    local living = Workspace:FindFirstChild("Living")
+    if living then
+        return living:FindFirstChild("Deku") or living:FindFirstChild("Roland")
+    end
+    return false
+end
+
+local function teleportPlayer()
+    local character = player.Character
+    if character then
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart then
+            humanoidRootPart.CFrame = teleportPosition
+        end
+    end
+end
+
+local function onCharacterAdded(character)
+    local function checkAndReset()
+        while character and character:FindFirstChild("Humanoid") do
+            wait(teleportDelay) 
+            
+            if not isTargetPresent() then
+                local inCombatGui = player.PlayerGui:FindFirstChild("InCombat")
+                if inCombatGui and inCombatGui.Enabled then
+                    local humanoid = character:FindFirstChild("Humanoid")
+                    if humanoid then
+                        humanoid.Health = 0
+                        wait(1) 
+                    end
+                else
+                    teleportPlayer() 
+                end
+            end
+        end
+    end
+
+    checkAndReset()
+end
+
+player.CharacterAdded:Connect(onCharacterAdded)
+
+if player.Character then
+    onCharacterAdded(player.Character)
+end
