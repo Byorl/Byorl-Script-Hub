@@ -183,10 +183,6 @@ for i,v in ipairs(game:GetService("Lighting"):GetChildren()) do
         game.Lighting.OutdoorAmbient = Color3.fromRGB(255,255,255);game.Lighting.GlobalShadows = true;
     end
 end
-
------------------------------------[[ Main Ui Libs ]]------------------------------------------------------------------
-local DrRayLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/Lvl9999/DrRay/main/Backup"))();
-local BoredLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/Lvl9999/Bored/main/Backup"))();
 -----------------------------------[[ Main Ui Libs ]]------------------------------------------------------------------
 
 getgenv().StartLoading = function(z)
