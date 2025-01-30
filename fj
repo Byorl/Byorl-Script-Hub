@@ -1,0 +1,628 @@
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import math
+import os
+from dataclasses import dataclass
+from typing import Dict, List, Literal, Optional, Set, Union
+from datetime import datetime
+
+import aiohttp
+import discord
+from aiohttp import web
+from discord.ext import commands
+
+API_VERSION = "v10"
+BASE_URL = f"https://discord.com/api/{API_VERSION}"
+DEFAULT_PORT = 8080
+
+@dataclass
+class BotConfig:
+    """Configuration for the Discord bot."""
+    bot_token: str
+    monitor_token: str
+    guild_id: str
+    category_channel_id: str
+    role_ids: Set[str]
+    leaderboard_api_key: str = "UDJRDcxFYdky9GqH4P3lYjkb3B23roluhSUJ0nqodhp7eazVg0"
+
+class LeaderboardManager:
+    """Handles leaderboard-related operations."""
+    
+    def __init__(self, api_key: str, logger: logging.Logger):
+        self.api_key = api_key
+        self.logger = logger
+        self.stat_type_map = {
+            'money': 'L1',
+            'time played': 'L2',
+            'blocks mined': 'L3'
+        }
+
+    @staticmethod
+    def decode(num: int) -> float:
+        """Decode a number using the specific algorithm."""
+        if num == 0:
+            return -1e309
+        num = math.pow(10, num / 4503599627370496 - 1) - 1
+        return num + math.log10(1 - math.pow(10, -num))
+
+    def format_value(self, value: int, stat_type: str) -> str:
+        """Format a value based on its stat type."""
+        if stat_type == 'money':
+            decoded = self.decode(value)
+            mantissa = math.pow(10, decoded % 1)
+            exponent = int(decoded)
+            return f"{mantissa:.3f}e{exponent}"
+        elif stat_type == 'time played':
+            seconds = int(math.pow(10, self.decode(value)))
+            return self.format_time(seconds)
+        else:
+            decoded = self.decode(value)
+            result = math.pow(10, decoded)
+            return f"{round(result):,}"
+
+    @staticmethod
+    def format_time(seconds: int) -> str:
+        """Format seconds into a readable time string."""
+        days, seconds = divmod(seconds, 86400)
+        hours, seconds = divmod(seconds, 3600)
+        minutes, seconds = divmod(seconds, 60)
+        return f"{days}d {hours}h {minutes}m {seconds}s"
+
+    async def get_roblox_user_id(self, username: str) -> Optional[str]:
+        """Fetch Roblox user ID from username."""
+        url = "https://users.roblox.com/v1/usernames/users"
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json={"usernames": [username]}) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    if data.get("data"):
+                        return str(data["data"][0]["id"])
+        return None
+
+    async def get_roblox_usernames(self, user_ids: List[str]) -> List[str]:
+        """Fetch Roblox usernames by user IDs."""
+        url = "https://apis.roblox.com/user-profile-api/v1/user/profiles/get-profiles"
+        headers = {'Authorization': f'Bearer {self.api_key}'}
+        data = {"userIds": user_ids, "fields": ["names.username"]}
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=data, headers=headers) as response:
+                if response.status == 200:
+                    profiles = await response.json()
+                    if 'profileDetails' in profiles:
+                        usernames = {
+                            profile['userId']: profile['names']['username'] 
+                            for profile in profiles['profileDetails']
+                        }
+                        return [usernames.get(int(user_id), "Unknown") for user_id in user_ids]
+                
+                self.logger.error(f"Error fetching usernames: HTTP {response.status}")
+                return ["Unknown"] * len(user_ids)
+
+class DiscordMutualServerBot:
+    """Main Discord bot class for mutual server checking and leaderboard functionality."""
+
+    def __init__(self, config: BotConfig):
+        self.config = config
+        self.logger = self._setup_logging()
+        self.leaderboard = LeaderboardManager(config.leaderboard_api_key, self.logger)
+        self.bot = self._setup_bot()
+        self.app = self._setup_web_app()
+        self.server_mapping = self._load_server_mapping()
+
+    def _setup_logging(self) -> logging.Logger:
+        """Initialize logging configuration."""
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler('discord_bot.log', encoding='utf-8'),
+                logging.StreamHandler()
+            ]
+        )
+        return logging.getLogger(__name__)
+
+    def _setup_bot(self) -> commands.Bot:
+        """Initialize and configure the Discord bot."""
+        intents = discord.Intents.default()
+        intents.message_content = True
+        intents.members = True
+        bot = commands.Bot(command_prefix='!', intents=intents)
+        
+        self._register_events(bot)
+        self._register_commands(bot)
+        
+        return bot
+
+    def _setup_web_app(self) -> web.Application:
+        """Initialize the web application."""
+        app = web.Application()
+        app.router.add_get('/', self.handle_http_request)
+        return app
+
+    def _register_events(self, bot: commands.Bot) -> None:
+        """Register bot events."""
+        @bot.event
+        async def on_ready():
+            self.logger.info(f'🤖 Bot logged in as {bot.user}')
+            try:
+                synced = await bot.tree.sync()
+                self.logger.info(f"Synced {len(synced)} command(s)")
+            except Exception as e:
+                self.logger.error(f"Failed to sync commands: {e}")
+
+    def _register_commands(self, bot: commands.Bot) -> None:
+        """Register bot commands."""
+
+        @bot.command(name='usercheck')
+        async def usercheck(ctx, user: discord.User = None):
+            await self.handle_usercheck(ctx, user)
+
+        @bot.command(name='checkuser')
+        async def checkuser(ctx, user: discord.User = None):
+            await self.handle_usercheck(ctx, user)
+
+        @bot.tree.command(name='usercheck', description="Check mutual servers of a user")
+        async def slash_usercheck(interaction: discord.Interaction, user: discord.User):
+            await self.handle_usercheck(interaction, user, is_slash=True)
+
+        @bot.tree.command(name='checkuser', description="Check mutual servers of a user")
+        async def slash_checkuser(interaction: discord.Interaction, user: discord.User):
+            await self.handle_usercheck(interaction, user, is_slash=True)
+
+        @bot.tree.command(name='guide', description="Get the guide for this category")
+        async def guide(interaction: discord.Interaction):
+            await self.handle_guide(interaction)
+
+        @bot.tree.command(name='leaderboard', description="Get leaderboard information")
+        async def leaderboard(
+            interaction: discord.Interaction,
+            stat_type: Literal['money', 'blocks mined', 'time played'],
+            username: str
+        ):
+            await self.handle_leaderboard_command(interaction, stat_type, username)
+
+        @bot.tree.command(name='bancheck', description="Check if a user is banned")
+        async def bancheck(interaction: discord.Interaction, username: str):
+            await self.handle_bancheck(interaction, username)
+
+    async def start_bot(self) -> None:
+        """Start the bot and web server."""
+        port = int(os.environ.get('PORT', DEFAULT_PORT))
+        
+        runner = web.AppRunner(self.app)
+        await runner.setup()
+        site = web.TCPSite(runner, '0.0.0.0', port)
+        await site.start()
+        self.logger.info(f"HTTP server started on port {port}")
+        
+        await self.bot.start(self.config.bot_token)
+
+    async def handle_http_request(self, request: web.Request) -> web.Response:
+        """Handle incoming HTTP requests."""
+        self.logger.info("Received HTTP request")
+        return web.Response(text="OK", status=200)
+
+    async def handle_guide(self, interaction: discord.Interaction) -> None:
+        """Handle guide command."""
+        category_name = interaction.channel.category.name if interaction.channel.category else None
+        
+        guide_responses = {
+            "🟢》circle grinding incremental": "The guide is still a work in progress.",
+            "🔴》circle incremental": "Here is the official guide for Circle Incremental: https://docs.google.com/document/d/1M6YuAQvfX5ASF-SxYJ1PfJMXrhr-g7APV_9I9MNMrIQ/edit?tab=t.0"
+        }
+        
+        response = guide_responses.get(category_name, "No guide available for this category.")
+        await interaction.response.send_message(response, ephemeral=True)
+
+    async def handle_bancheck(self, interaction: discord.Interaction, username: str) -> None:
+        """Handle bancheck command."""
+        user_id = await self.leaderboard.get_roblox_user_id(username)
+        if not user_id:
+            await interaction.response.send_message(
+                f"Could not find Roblox user with username: {username}",
+                ephemeral=True
+            )
+            return
+        await interaction.response.defer(ephemeral=True)
+        
+        url = f'http://golmodoth.net/ban/{user_id}'
+        headers = {'Key': self.config.leaderboard_api_key}
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers) as response:
+                    if response.status == 404:
+                        await interaction.followup.send("This user is not banned!", ephemeral=True)
+                        return
+                    
+                    text = await response.text()
+                    if not text:
+                        await interaction.followup.send("Received empty response from server", ephemeral=True)
+                        return
+                    try:
+                        data = json.loads(text)
+                    except json.JSONDecodeError:
+                        await interaction.followup.send("Failed to parse server response", ephemeral=True)
+                        return
+
+                    def format_time(seconds: int) -> str:
+                        days = seconds // (24 * 3600)
+                        seconds %= (24 * 3600)
+                        hours = seconds // 3600
+                        seconds %= 3600
+                        minutes = seconds // 60
+                        seconds %= 60
+                        
+                        parts = []
+                        if days > 0:
+                            parts.append(f"{days}d")
+                        if hours > 0 or (days > 0):
+                            parts.append(f"{hours}h")
+                        if minutes > 0:
+                            parts.append(f"{minutes}m")
+                        if seconds > 0:
+                            parts.append(f"{seconds}s")
+                        
+                        return " ".join(parts) if parts else "0s"
+
+                    playtime_seconds = int(data['user_playtime'])
+                    formatted_playtime = format_time(playtime_seconds)
+                    
+                    def parse_timestamp(timestamp_str: str) -> int:
+                        dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                        return int(dt.timestamp())
+
+                    ban_start_unix = parse_timestamp(data['ban_start'])
+                    ban_start = f"<t:{ban_start_unix}>"
+                    
+                    if data['ban_end'] is not None:
+                        ban_end_unix = parse_timestamp(data['ban_end'])
+                        ban_end = f"<t:{ban_end_unix}>"
+                    else:
+                        ban_end = "Never"
+                    
+                    response_message = (
+                        "## Ban Check\n"
+                        "- User Information\n"
+                        f"  - Username: {username}\n"
+                        f"  - Reason: {data['ban_reason']}\n\n"
+                        "- Account Information\n"
+                        f"  - Ban Start: {ban_start}\n"
+                        f"  - Ban Ends: {ban_end}\n"
+                        f"  - Playtime: {formatted_playtime}\n"
+                        f"  - User Device: {data['user_device']}\n"
+                    )
+                    
+                    await interaction.followup.send(response_message, ephemeral=True)
+        
+        except aiohttp.ClientResponseError as e:
+            if e.status == 404:
+                await interaction.followup.send("This user is not banned!", ephemeral=True)
+            else:
+                await interaction.followup.send(f"An error occurred: {e.status}", ephemeral=True)
+        except Exception as e:
+            self.logger.error(f"Error in bancheck: {e}")
+            await interaction.followup.send("An error occurred while checking the ban.", ephemeral=True)
+
+    async def handle_leaderboard_command(
+        self, 
+        interaction: discord.Interaction,
+        stat_type: str,
+        username: str
+    ) -> None:
+        """Handle leaderboard command."""
+        user_id = await self.leaderboard.get_roblox_user_id(username)
+        if not user_id:
+            await interaction.response.send_message(
+                f"Could not find Roblox user with username: {username}",
+                ephemeral=True
+            )
+            return
+        
+        await self.fetch_and_display_leaderboard(interaction, stat_type, user_id)
+
+    async def fetch_and_display_leaderboard(
+        self,
+        interaction: discord.Interaction,
+        stat_type: str,
+        user_id: str
+    ) -> None:
+        """Fetch and display leaderboard data."""
+        await interaction.response.defer(ephemeral=True)
+        
+        async with aiohttp.ClientSession() as session:
+            url = f'http://golmodoth.net/leaderboards/{user_id}'
+            headers = {'key': self.config.leaderboard_api_key}
+            
+            try:
+                async with session.get(url, headers=headers) as response:
+                    if response.status != 200:
+                        await interaction.followup.send("Error fetching leaderboard data", ephemeral=True)
+                        return
+                    
+                    data = json.loads(await response.text())
+                    if not data:
+                        await interaction.followup.send("You are not on the leaderboard.", ephemeral=True)
+                        return
+                    
+                    leaderboard_data = data[self.leaderboard.stat_type_map[stat_type]]
+                    formatted_entries = await self._format_leaderboard_entries(
+                        leaderboard_data, stat_type, user_id
+                    )
+                    
+                    await interaction.followup.send(formatted_entries, ephemeral=True)
+                    
+            except Exception as e:
+                self.logger.error(f"Error fetching leaderboard data: {e}")
+                await interaction.followup.send(
+                    "An error occurred while fetching leaderboard data",
+                    ephemeral=True
+                )
+
+    async def _format_leaderboard_entries(
+        self,
+        leaderboard_data: Dict,
+        stat_type: str,
+        user_id: str
+    ) -> str:
+        """Format leaderboard entries for display."""
+        start_rank = leaderboard_data['startrank']
+        entries = leaderboard_data['leaderboard']
+        
+        user_ids = [entry[0] for entry in entries]
+        usernames = await self.leaderboard.get_roblox_usernames(user_ids)
+        
+        formatted_entries = []
+        for i, (entry_id, value) in enumerate(entries):
+            rank = start_rank + i
+            formatted_value = self.leaderboard.format_value(value, stat_type)
+            username = usernames[i] if i < len(usernames) else "Unknown"
+            
+            entry_text = f"- {'**' if str(entry_id) == str(user_id) else ''}#{rank} {username} {formatted_value}{'**' if str(entry_id) == str(user_id) else ''}"
+            formatted_entries.append(entry_text)
+        
+        return f"## {stat_type.capitalize()}:\n" + "\n".join(formatted_entries)
+
+    async def handle_usercheck(
+        self,
+        ctx_or_interaction: Union[commands.Context, discord.Interaction],
+        user: Optional[discord.User],
+        is_slash: bool = False
+    ) -> None:
+        """Handle usercheck command."""
+        try:
+            if not await self._validate_permissions(ctx_or_interaction, is_slash):
+                return
+
+            if user is None:
+                await self._send_response(
+                    ctx_or_interaction,
+                    "Please mention a user to check.",
+                    is_slash,
+                    ephemeral=True
+                )
+                return
+
+            self.logger.info(f"🔎 Usercheck for: {user.id}")
+
+            if is_slash:
+                await ctx_or_interaction.response.defer(ephemeral=True)
+
+            channel_id = (ctx_or_interaction.channel_id if is_slash 
+                         else ctx_or_interaction.channel.id)
+            await self.get_mutual_guilds(str(user.id), str(channel_id), user.mention)
+
+        except Exception as e:
+            self.logger.error(f"Error in handle_usercheck: {str(e)}")
+            await self._send_error_response(ctx_or_interaction, is_slash)
+
+    async def _validate_permissions(
+        self,
+        ctx_or_interaction: Union[commands.Context, discord.Interaction],
+        is_slash: bool
+    ) -> bool:
+        """Validate user permissions for commands."""
+        roles = (ctx_or_interaction.user.roles if is_slash 
+                else ctx_or_interaction.author.roles)
+        
+        if not any(str(role.id) in self.config.role_ids for role in roles):
+            await self._send_response(
+                ctx_or_interaction,
+                "You do not have permission to use this command.",
+                is_slash,
+                ephemeral=True
+            )
+            return False
+        return True
+
+    async def _send_response(
+        self,
+        ctx_or_interaction: Union[commands.Context, discord.Interaction],
+        message: str,
+        is_slash: bool,
+        ephemeral: bool = False
+    ) -> None:
+        """Send a response to the user."""
+        try:
+            if is_slash:
+                if not ctx_or_interaction.response.is_done():
+                    await ctx_or_interaction.response.send_message(message, ephemeral=ephemeral)
+                else:
+                    await ctx_or_interaction.followup.send(message, ephemeral=ephemeral)
+            else:
+                await ctx_or_interaction.send(message)
+        except discord.NotFound:
+            if hasattr(ctx_or_interaction.channel, 'send'):
+                await ctx_or_interaction.channel.send(message)
+        except Exception as e:
+            self.logger.error(f"Error sending response: {e}")
+
+    async def _send_error_response(
+        self,
+        ctx_or_interaction: Union[commands.Context, discord.Interaction],
+        is_slash: bool
+    ) -> None:
+        """Send an error response to the user."""
+        await self._send_response(
+            ctx_or_interaction,
+            "An error occurred while processing the command.",
+            is_slash,
+            ephemeral=True
+        )
+
+    async def get_mutual_guilds(self, user_id: str, channel_id: str, user_mention: str) -> None:
+        """Get and display mutual guilds for a user."""
+        try:
+            headers = {'Authorization': self.config.monitor_token}
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    f'{BASE_URL}/users/{user_id}/profile',
+                    headers=headers
+                ) as response:
+                    if response.status != 200:
+                        self.logger.error(f"Failed to get profile data. Status: {response.status}")
+                        return
+                    profile_data = await response.json()
+
+            mutual_guilds = profile_data.get('mutual_guilds', [])
+            self.logger.info(f"Total mutual guilds found: {len(mutual_guilds)}")
+            
+            server_names = []
+            for guild in mutual_guilds:
+                guild_id = str(guild["id"])
+                mapped_name = self.server_mapping.get(guild_id)
+                if mapped_name is None:
+                    self.logger.info(f"No mapping found for guild ID: {guild_id}")
+                else:
+                    server_names.append(mapped_name)
+            
+            self.logger.info(f"Mapped server names found: {len(server_names)}")
+
+            message = (
+                f"**Scan Complete for {user_mention}**\n- " + 
+                ("These are the executors I detected:\n  - Vometo Client\n" + 
+                "\n".join(f"  - {server}" for server in sorted(server_names)) 
+                if server_names else 
+                "I was not able to detect any executors")
+            )
+            
+            channel = self.bot.get_channel(int(channel_id))
+            if channel:
+                await channel.send(message)
+            else:
+                self.logger.error(f"Could not find channel with ID: {channel_id}")
+                
+        except Exception as e:
+            self.logger.error(f"Error in get_mutual_guilds: {str(e)}")
+
+    @staticmethod
+    def _load_server_mapping() -> Dict[str, str]:
+        """Load the server name mapping."""
+        return {
+            "1245028869023731936": "AWP (Windows)",
+            "1305488581694984233": "Synapse Z (Windows)",
+            "868278834821230613": "Swift (Windows)",
+            "910326955268771850": "Nihon (Windows)",
+            "1259934578299371521": "Seliware (Windows)",
+            "1263825589094055957": "Rebel (Windows)",
+            "1202971639994912860": "Fusion (Windows)",
+            "1245045796798468197": "Scriptify (Windows)",
+            "1289659915790450849": "Xeno (Windows)",
+            "1307478332354330685": "Argon",
+            "1258796097153929237": "Zorara",
+            "1326572447230595114": "Atlantis",
+            "1064930660126564402": "Zeus (Windows)",
+            "1260403972645326970": "Cryptic (Mobile)",
+            "1257680623393443952": "Ronix",
+            "1250289066730197085": "Mint",
+            "991702878257422347": "Arceus X (Mobile)",
+            "978632997425283092": "Codex (Mobile)",
+            "1221935816515911850": "Delta (Mobile)",
+            "924722337981530132": "Hydrogen (Mobile)",
+            "1240702465091960903": "Apple-Ware (Mobile)",
+            "1069840556307525772": "Vega-X (Mobile)",
+            "1262951163943452723": "Macsploit",
+            "1028337299441864806": "Nezur",
+            "1329919403759763518": "Rune",
+            "983726863593635912": "Celery",
+            "1165804915159990353": "Kiwi",
+            "1243864146118836224": "Carbon",
+            "1245924599955329064": "Luna",
+            "1297289084036841542": "Nova",
+            "876072383033798667": "Severe",
+            "920940258537910303": "CoI (Intellect)",
+            "1302591269498912818": "Horizon",
+            "1296969789608169542": "Luna",
+            "1309287859450024007": "Nova | Private",
+            "1324451703302651976": "Cryptic (Windows)",
+            "789503657430745129": "Sentinel",
+            "889325574655467560": "Electron",
+            "878796318137524245": "Script-Ware",
+            "1265731008439910441": "Synth X",
+            "1258139531341856838": "Uranium",
+            "919032826924515388": "Fluxus (Windows)",
+            "1037313017588764732": "Fluxus (Mobile)",
+            "1025860843520393277": "Fluxus (discontinued)",
+            "1038623510500753470": "Krnl",
+            "1226285947646378097": "Fluxus",
+            "1282242372725641319": "Matcha",
+            "1297728649054785626": "Solara",
+            "1326054844171288596": "Synaptic",
+            "1306844890331611266": "Flexer",
+            "1317635589616435250": "Syphra",
+            "1300469061473402983": "Fluarine",
+            "1275949456977694761": "Scorpion",
+            "1229790991494545470": "Mono",
+            "1148574659118379079": "Manti",
+            "1244175339123507252": "Sea",
+            "1271731828717522965": "Cloudy",
+            "918887039779360780": "Gegamo",
+            "1270940860371963967": "Synapse X (Remake)",
+            "1326238512055320576": "Paradox",
+            "1296113063438717028": "N-Sploit",
+            "1231707001164402900": "Galaxy",
+            "1313844244724842608": "Optic",
+            "1277966873429938277": "Echo",
+            "796302747808694293": "Sylph",
+            "1319736526242054348": "ELEVORA",
+            "1311387776893321337": "Arcadia",
+            "1237084895554048122": "Wisp",
+            "1295258555888177182": "FrostWare",
+            "1324948547900276768": "Nightware",
+            "1287032424177467403": "Norflex",
+            "1247576203502682163": "Salad",
+            "1267544480425316524": "Electra",
+            "1290032324871848018": "Taxus",
+            "849510862863204362": "Viper X",
+            "943223926509699072": "Velocity",
+            "1290995765292040276": "CZK",
+            "1272995914721525831": "Elemental"
+        }
+
+
+async def main():
+    """Main entry point for the bot."""
+    config = BotConfig(
+        bot_token='MTA3OTE0OTAwNDY2MDY4NjkyOA.GdHzOa.98oELaWsRRljCn2k2B49u5xc62dVkbsPR7w33Y',
+        monitor_token='MTMyNjIwNDcxNjM0NTk4Mjk5Ng.GZdeSN.77hZUUnn7zjNNuSjlBfiazPp6drkt9JNLeQK5o',
+        guild_id='805379039924846613',
+        category_channel_id='816792165354438666',
+        role_ids={'805404066157953038', '1191502288188100618'}
+    )
+    
+    bot = DiscordMutualServerBot(config)
+    
+    try:
+        bot.logger.info("🤖 Discord Mutual Server Bot Starting...")
+        await bot.start_bot()
+    except KeyboardInterrupt:
+        bot.logger.info("🛑 Bot Stopped by User")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
