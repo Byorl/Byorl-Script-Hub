@@ -1,15 +1,17 @@
+while not game:IsLoaded(5) do task.wait() end
+
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
 local WindowFocusReleasedFunction = function()
 	RunService:Set3dRenderingEnabled(false)
-	setfpscap(10)
+    setfpscap(30)
 	return
 end
 
 local WindowFocusedFunction = function()
 	RunService:Set3dRenderingEnabled(true)
-	setfpscap(360)
+    setfpscap(120)
 	return
 end
 
@@ -18,4 +20,6 @@ local Initialize = function()
 	UserInputService.WindowFocused:Connect(WindowFocusedFunction)
 	return
 end
+
 Initialize()
+RunService:Set3dRenderingEnabled(false)
