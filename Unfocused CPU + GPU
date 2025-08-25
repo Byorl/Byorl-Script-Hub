@@ -1,5 +1,3 @@
-while not game:IsLoaded(5) do task.wait() end
-
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
