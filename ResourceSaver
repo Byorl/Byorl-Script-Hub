@@ -3,7 +3,7 @@ local RunService = game:GetService("RunService")
 
 local WindowFocusReleasedFunction = function()
 	RunService:Set3dRenderingEnabled(false)
-    setfpscap(60)
+    setfpscap(30)
 	return
 end
 
@@ -20,4 +20,4 @@ local Initialize = function()
 end
 
 Initialize()
-RunService:Set3dRenderingEnabled(false)
+WindowFocusReleasedFunction()
