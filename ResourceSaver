@@ -1,21 +1,34 @@
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
-local WindowFocusReleasedFunction = function()
-	RunService:Set3dRenderingEnabled(false)
-	return
+if getgenv().fpscap == nil then
+    getgenv().fpscap = 60
 end
 
-local WindowFocusedFunction = function()
-	RunService:Set3dRenderingEnabled(true)
-	return
+local function ApplySettings(focused)
+    if focused then
+        RunService:Set3dRenderingEnabled(true)
+        setfpscap(getgenv().fpscap)
+    else
+        RunService:Set3dRenderingEnabled(false)
+        setfpscap(10)
+    end
 end
 
-local Initialize = function()
-	UserInputService.WindowFocusReleased:Connect(WindowFocusReleasedFunction)
-	UserInputService.WindowFocused:Connect(WindowFocusedFunction)
-	return
-end
+UserInputService.WindowFocused:Connect(function()
+    ApplySettings(true)
+end)
 
-Initialize()
-WindowFocusReleasedFunction()
+UserInputService.WindowFocusReleased:Connect(function()
+    ApplySettings(false)
+end)
+
+ApplySettings(false)
+
+task.spawn(function()
+    while task.wait(1) do
+        if UserInputService:GetFocusedWidget() then
+            setfpscap(getgenv().fpscap)
+        end
+    end
+end)
