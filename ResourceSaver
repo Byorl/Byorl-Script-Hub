@@ -11,7 +11,7 @@ local function ApplySettings(focused)
         setfpscap(getgenv().fpscap)
     else
         RunService:Set3dRenderingEnabled(false)
-        setfpscap(10)
+        setfpscap(15)
     end
 end
 
