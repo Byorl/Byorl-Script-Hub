@@ -1677,12 +1677,21 @@ function MacLib:Window(Settings)
 						ChangeState("Idle")
 					end)
 
-					buttonInteract.MouseButton1Click:Connect(Callback)
+					local buttonEnabled = true
+					buttonInteract.MouseButton1Click:Connect(function()
+						if not buttonEnabled then return end
+						Callback()
+					end)
 					function ButtonFunctions:UpdateName(Name)
 						buttonInteract.Text = Name
 					end
 					function ButtonFunctions:SetVisibility(State)
 						button.Visible = State
+					end
+					function ButtonFunctions:SetEnabled(State)
+						buttonEnabled = State
+						buttonInteract.TextTransparency = State and 0.5 or 0.75
+						buttonImage.ImageTransparency = State and 0.5 or 0.75
 					end
 
 					if Flag then
@@ -1800,7 +1809,9 @@ function MacLib:Window(Settings)
 
 					NewState(togglebool)
 
+					local toggleEnabled = true
 					local function Toggle()
+						if not toggleEnabled then return end
 						togglebool = not togglebool
 						NewState(togglebool, ToggleFunctions.Settings.Callback)
 					end
@@ -1822,6 +1833,16 @@ function MacLib:Window(Settings)
 					end
 					function ToggleFunctions:SetVisibility(State)
 						toggle.Visible = State
+					end
+					function ToggleFunctions:SetEnabled(State)
+						toggleEnabled = State
+						toggleName.TextTransparency = State and 0.5 or 0.75
+						if not State then
+							toggle1.ImageTransparency = 0.85
+							togglerHead.ImageTransparency = 0.92
+						else
+							NewState(togglebool)
+						end
 					end
 
 					if Flag then
@@ -1950,6 +1971,7 @@ function MacLib:Window(Settings)
 					sliderElements.Parent = slider
 
 					local dragging = false
+					local sliderEnabled = true
 
 					local DisplayMethods = {
 						Hundredths = function(sliderValue) -- Deprecated use Settings.Precision
@@ -2013,6 +2035,7 @@ function MacLib:Window(Settings)
 					SetValue(SliderFunctions.Settings.Default, true)
 
 					sliderHead.InputBegan:Connect(function(input)
+						if not sliderEnabled then return end
 						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 							dragging = true
 							SetValue(input)
@@ -2073,10 +2096,16 @@ function MacLib:Window(Settings)
 					section:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateSliderBarSize)
 
 					function SliderFunctions:UpdateName(Name)
-						sliderName = Name
+						sliderName.Text = Name
 					end
 					function SliderFunctions:SetVisibility(State)
 						slider.Visible = State
+					end
+					function SliderFunctions:SetEnabled(State)
+						sliderEnabled = State
+						sliderName.TextTransparency = State and 0.5 or 0.75
+						sliderBar.ImageColor3 = State and Color3.fromRGB(87, 86, 86) or Color3.fromRGB(50, 50, 50)
+						sliderHead.ImageColor3 = State and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(130, 130, 130)
 					end
 					function SliderFunctions:UpdateValue(Value)
 						SetValue(tonumber(Value), true)
@@ -2244,6 +2273,12 @@ function MacLib:Window(Settings)
 					function InputFunctions:SetVisibility(State)
 						input.Visible = State
 					end
+					function InputFunctions:SetEnabled(State)
+						InputBox.TextEditable = State
+						InputBox.ClearTextOnFocus = State
+						inputName.TextTransparency = State and 0.5 or 0.75
+						InputBox.TextTransparency = State and 0.1 or 0.5
+					end
 					function InputFunctions:GetInput()
 						return InputBox.Text
 					end
@@ -2347,6 +2382,7 @@ function MacLib:Window(Settings)
 					local isBinding = false
 					local reset = false
 					local binded = KeybindFunctions.Settings.Default
+					local keybindEnabled = true
 
 					local function resetFocusState()
 						focused = false
@@ -2367,12 +2403,13 @@ function MacLib:Window(Settings)
 					end)
 
 					UserInputService.InputBegan:Connect(function(inp)
+						if not keybindEnabled then return end
 						if focused and not isBinding then
 							isBinding = true
 
 							local Event
 							Event = UserInputService.InputBegan:Connect(function(input)
-								if KeybindFunctions.Settings.Blacklist and (table.find(KeybindFunctions.KeybindFunctions.Settings.Blacklist, input.KeyCode) or table.find(KeybindFunctions.Settings.Blacklist, input.UserInputType)) then
+								if KeybindFunctions.Settings.Blacklist and (table.find(KeybindFunctions.Settings.Blacklist, input.KeyCode) or table.find(KeybindFunctions.Settings.Blacklist, input.UserInputType)) then
 									binderBox:ReleaseFocus()
 									resetFocusState()
 									Event:Disconnect()
@@ -2438,6 +2475,12 @@ function MacLib:Window(Settings)
 
 					function KeybindFunctions:SetVisibility(State)
 						keybind.Visible = State
+					end
+					function KeybindFunctions:SetEnabled(State)
+						keybindEnabled = State
+						binderBox.TextEditable = State
+						keybindName.TextTransparency = State and 0.5 or 0.75
+						binderBox.TextTransparency = State and 0.1 or 0.5
 					end
 
 					if Flag then
@@ -2751,7 +2794,11 @@ function MacLib:Window(Settings)
 						dropped = isDropdownOpen
 					end
 
-					interact.MouseButton1Click:Connect(ToggleDropdown)
+					local dropdownEnabled = true
+					interact.MouseButton1Click:Connect(function()
+						if not dropdownEnabled then return end
+						ToggleDropdown()
+					end)
 
 					local function addOption(i, v)
 						local option = Instance.new("TextButton")
@@ -2909,6 +2956,11 @@ function MacLib:Window(Settings)
 					end
 					function DropdownFunctions:SetVisibility(State)
 						dropdown.Visible = State
+					end
+					function DropdownFunctions:SetEnabled(State)
+						dropdownEnabled = State
+						dropdownName.TextTransparency = State and 0.5 or 0.75
+						dropdownImage.ImageTransparency = State and 0.5 or 0.75
 					end
 					function DropdownFunctions:UpdateSelection(newSelection)
 						if not newSelection then return end
@@ -4231,7 +4283,11 @@ function MacLib:Window(Settings)
 						transition(false)
 					end
 
-					interact.MouseButton1Click:Connect(colorpickerIn)
+					local colorpickerEnabled = true
+					interact.MouseButton1Click:Connect(function()
+						if not colorpickerEnabled then return end
+						colorpickerIn()
+					end)
 
 					cancel.MouseButton1Click:Connect(colorpickerOut)
 					confirm.MouseButton1Click:Connect(function()
@@ -4394,6 +4450,12 @@ function MacLib:Window(Settings)
 					function LabelFunctions:SetVisibility(State)
 						label.Visible = State
 					end
+					function LabelFunctions:SetColor(Color)
+						labelText.TextColor3 = Color
+					end
+					function LabelFunctions:SetTransparency(Value)
+						labelText.TextTransparency = Value
+					end
 
 					if Flag then
 						MacLib.Options[Flag] = LabelFunctions
@@ -4437,6 +4499,12 @@ function MacLib:Window(Settings)
 					end
 					function SubLabelFunctions:SetVisibility(State)
 						subLabel.Visible = State
+					end
+					function SubLabelFunctions:SetColor(Color)
+						subLabelText.TextColor3 = Color
+					end
+					function SubLabelFunctions:SetTransparency(Value)
+						subLabelText.TextTransparency = Value
 					end
 
 					if Flag then
@@ -4632,6 +4700,10 @@ function MacLib:Window(Settings)
 
 			function TabFunctions:Select()
 				SelectCurrentTab()
+			end
+
+			function TabFunctions:SetVisible(State)
+				tabSwitcher.Visible = State
 			end
 
 			function TabFunctions:InsertConfigSection(Side)
@@ -4920,6 +4992,19 @@ function MacLib:Window(Settings)
 
 		notificationControls.Parent = notification
 
+		local notificationTypeColors = {
+			Success = Color3.fromRGB(119, 174, 94),
+			Warning = Color3.fromRGB(252, 190, 57),
+			Error   = Color3.fromRGB(250, 93, 86),
+			Info    = Color3.fromRGB(86, 156, 250),
+		}
+		if Settings.Type and notificationTypeColors[Settings.Type] then
+			local typeColor = notificationTypeColors[Settings.Type]
+			notificationUIStroke.Color = typeColor
+			notificationUIStroke.Transparency = 0.6
+			notificationTitle.TextColor3 = typeColor
+		end
+
 		local tweens = {
 			In = Tween(notificationUIScale, TweenInfo.new(0.2, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
 				Scale = Settings.Scale or 1
@@ -4944,6 +5029,24 @@ function MacLib:Window(Settings)
 				if Settings.Callback then
 					task.spawn(Settings.Callback)
 				end
+			end)
+		end
+
+		if Settings.OnClick then
+			local bodyInteract = Instance.new("TextButton")
+			bodyInteract.Name = "BodyInteract"
+			bodyInteract.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json")
+			bodyInteract.Text = ""
+			bodyInteract.TextColor3 = Color3.fromRGB(0, 0, 0)
+			bodyInteract.TextSize = 14
+			bodyInteract.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			bodyInteract.BackgroundTransparency = 1
+			bodyInteract.BorderSizePixel = 0
+			bodyInteract.Size = UDim2.fromScale(1, 1)
+			bodyInteract.Parent = notificationInformation
+			bodyInteract.MouseButton1Click:Connect(function()
+				NotificationFunctions:Cancel()
+				task.spawn(Settings.OnClick)
 			end)
 		end
 
@@ -5416,10 +5519,11 @@ function MacLib:Window(Settings)
 		},
 		["Keybind"] = {
 			Save = function(Flag, data)
+				local currentBind = data:GetBind()
 				return {
 					type = "Keybind", 
 					flag = Flag, 
-					bind = (typeof(data.Bind) == "EnumItem" and data.Bind.Name) or nil
+					bind = (typeof(currentBind) == "EnumItem" and currentBind.Name) or nil
 				}
 			end,
 			Load = function(Flag, data)
