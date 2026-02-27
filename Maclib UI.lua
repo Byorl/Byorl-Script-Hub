@@ -2259,6 +2259,191 @@ function MacLib:Window(Settings)
 					return SliderFunctions
 				end
 
+				function SectionFunctions:Stepper(Settings, Flag)
+					local StepperFunctions = { Settings = Settings, IgnoreConfig = false, Class = "Stepper" }
+					local stepAmount = Settings.Step or 1
+					local minVal = Settings.Minimum or 0
+					local maxVal = Settings.Maximum or 10
+					local currentValue = math.clamp(Settings.Default or minVal, minVal, maxVal)
+
+					local stepper = Instance.new("Frame")
+					stepper.Name = "Stepper"
+					stepper.AutomaticSize = Enum.AutomaticSize.Y
+					stepper.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+					stepper.BackgroundTransparency = 1
+					stepper.BorderColor3 = Color3.fromRGB(0, 0, 0)
+					stepper.BorderSizePixel = 0
+					stepper.Size = UDim2.new(1, 0, 0, 38)
+					stepper.Parent = section
+
+					local stepperName = Instance.new("TextLabel")
+					stepperName.Name = "StepperName"
+					stepperName.FontFace = Font.new(assets.interFont)
+					stepperName.Text = StepperFunctions.Settings.Name
+					stepperName.RichText = true
+					stepperName.TextColor3 = Color3.fromRGB(255, 255, 255)
+					stepperName.TextSize = 13
+					stepperName.TextTransparency = 0.5
+					stepperName.TextTruncate = Enum.TextTruncate.AtEnd
+					stepperName.TextXAlignment = Enum.TextXAlignment.Left
+					stepperName.TextYAlignment = Enum.TextYAlignment.Top
+					stepperName.AnchorPoint = Vector2.new(0, 0.5)
+					stepperName.AutomaticSize = Enum.AutomaticSize.XY
+					stepperName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					stepperName.BackgroundTransparency = 1
+					stepperName.BorderColor3 = Color3.fromRGB(0, 0, 0)
+					stepperName.BorderSizePixel = 0
+					stepperName.Position = UDim2.fromScale(0, 0.5)
+					stepperName.Parent = stepper
+
+					local stepperControls = Instance.new("Frame")
+					stepperControls.Name = "StepperControls"
+					stepperControls.AnchorPoint = Vector2.new(1, 0.5)
+					stepperControls.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					stepperControls.BackgroundTransparency = 1
+					stepperControls.BorderColor3 = Color3.fromRGB(0, 0, 0)
+					stepperControls.BorderSizePixel = 0
+					stepperControls.Position = UDim2.fromScale(1, 0.5)
+					stepperControls.AutomaticSize = Enum.AutomaticSize.X
+					stepperControls.Size = UDim2.fromOffset(0, 21)
+
+					local stepperControlsUIListLayout = Instance.new("UIListLayout")
+					stepperControlsUIListLayout.Name = "StepperControlsUIListLayout"
+					stepperControlsUIListLayout.Padding = UDim.new(0, 4)
+					stepperControlsUIListLayout.FillDirection = Enum.FillDirection.Horizontal
+					stepperControlsUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+					stepperControlsUIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+					stepperControlsUIListLayout.Parent = stepperControls
+
+					local function makeStepButton(label, layoutOrder)
+						local btn = Instance.new("TextButton")
+						btn.Name = label == "-" and "DecrementButton" or "IncrementButton"
+						btn.FontFace = Font.new(assets.interFont)
+						btn.Text = label
+						btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+						btn.TextSize = 14
+						btn.TextTransparency = 0.5
+						btn.AutoButtonColor = false
+						btn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+						btn.BackgroundTransparency = 0.95
+						btn.BorderColor3 = Color3.fromRGB(0, 0, 0)
+						btn.BorderSizePixel = 0
+						btn.Size = UDim2.fromOffset(21, 21)
+						btn.LayoutOrder = layoutOrder
+						local btnCorner = Instance.new("UICorner")
+						btnCorner.CornerRadius = UDim.new(0, 4)
+						btnCorner.Parent = btn
+						local btnStroke = Instance.new("UIStroke")
+						btnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+						btnStroke.Color = Color3.fromRGB(255, 255, 255)
+						btnStroke.Transparency = 0.9
+						btnStroke.Parent = btn
+						return btn
+					end
+
+					local decrementBtn = makeStepButton("-", 0)
+					decrementBtn.Parent = stepperControls
+
+					local stepperValueLabel = Instance.new("TextLabel")
+					stepperValueLabel.Name = "StepperValue"
+					stepperValueLabel.FontFace = Font.new(assets.interFont)
+					stepperValueLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+					stepperValueLabel.TextSize = 12
+					stepperValueLabel.TextTransparency = 0.1
+					stepperValueLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					stepperValueLabel.BackgroundTransparency = 0.95
+					stepperValueLabel.BorderColor3 = Color3.fromRGB(0, 0, 0)
+					stepperValueLabel.BorderSizePixel = 0
+					stepperValueLabel.Size = UDim2.fromOffset(41, 21)
+					stepperValueLabel.LayoutOrder = 1
+					local svCorner = Instance.new("UICorner")
+					svCorner.CornerRadius = UDim.new(0, 4)
+					svCorner.Parent = stepperValueLabel
+					local svStroke = Instance.new("UIStroke")
+					svStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+					svStroke.Color = Color3.fromRGB(255, 255, 255)
+					svStroke.Transparency = 0.9
+					svStroke.Parent = stepperValueLabel
+					local svPadding = Instance.new("UIPadding")
+					svPadding.PaddingLeft = UDim.new(0, 2)
+					svPadding.PaddingRight = UDim.new(0, 2)
+					svPadding.Parent = stepperValueLabel
+					stepperValueLabel.Parent = stepperControls
+
+					local incrementBtn = makeStepButton("+", 2)
+					incrementBtn.Parent = stepperControls
+
+					stepperControls.Parent = stepper
+
+					local stepperEnabled = true
+
+					local function SetStepperValue(val, ignoreCallback)
+						local snapped = math.floor(val / stepAmount + 0.5) * stepAmount
+						snapped = math.clamp(snapped, minVal, maxVal)
+						local precision = Settings.Precision
+						local display = precision and string.format("%." .. precision .. "f", snapped) or tostring(snapped)
+						stepperValueLabel.Text = display .. (Settings.Suffix or "")
+						currentValue = snapped
+						StepperFunctions.Value = snapped
+						if not ignoreCallback then
+							task.spawn(function()
+								if StepperFunctions.Settings.Callback then
+									StepperFunctions.Settings.Callback(snapped)
+								end
+							end)
+						end
+					end
+
+					SetStepperValue(currentValue, true)
+
+					decrementBtn.MouseButton1Click:Connect(function()
+						if not stepperEnabled then return end
+						SetStepperValue(currentValue - stepAmount)
+					end)
+
+					incrementBtn.MouseButton1Click:Connect(function()
+						if not stepperEnabled then return end
+						SetStepperValue(currentValue + stepAmount)
+					end)
+
+					function StepperFunctions:UpdateName(Name)
+						stepperName.Text = Name
+					end
+					function StepperFunctions:SetVisibility(State)
+						stepper.Visible = State
+					end
+					function StepperFunctions:SetEnabled(State)
+						stepperEnabled = State
+						stepperName.TextTransparency = State and 0.5 or 0.75
+						decrementBtn.TextTransparency = State and 0.5 or 0.75
+						incrementBtn.TextTransparency = State and 0.5 or 0.75
+						stepperValueLabel.TextTransparency = State and 0.1 or 0.5
+					end
+					function StepperFunctions:SetValue(val)
+						SetStepperValue(tonumber(val), true)
+					end
+					function StepperFunctions:GetValue()
+						return currentValue
+					end
+					function StepperFunctions:Flash()
+						local flashStroke = Instance.new("UIStroke")
+						flashStroke.Color = Color3.fromRGB(255, 255, 255)
+						flashStroke.Transparency = 0.5
+						flashStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+						flashStroke.Parent = stepper
+						Tween(flashStroke, TweenInfo.new(0.4, Enum.EasingStyle.Sine), {Transparency = 1}):Play()
+						task.delay(0.4, function() flashStroke:Destroy() end)
+					end
+					function StepperFunctions:SetTooltip(Text)
+						if StepperFunctions._tooltip then StepperFunctions._tooltip:Destroy() end
+						StepperFunctions._tooltip = AddTooltip(stepper, Text)
+					end
+					if Flag then
+						MacLib.Options[Flag] = StepperFunctions
+					end
+					return StepperFunctions
+				end
+
 				function SectionFunctions:Input(Settings, Flag)
 					local InputFunctions = { Settings = Settings, IgnoreConfig = false, Class = "Input" }
 					local input = Instance.new("Frame")
@@ -3261,6 +3446,16 @@ function MacLib:Window(Settings)
 						end
 
 						return optionsStatus
+					end
+
+					function DropdownFunctions:GetSelection()
+						if DropdownFunctions.Settings.Multi then
+							local copy = {}
+							for _, v in ipairs(Selected) do copy[#copy + 1] = v end
+							return copy
+						else
+							return Selected[1]
+						end
 					end
 
 					function DropdownFunctions:RemoveOptions(remove)
@@ -4857,8 +5052,9 @@ function MacLib:Window(Settings)
 					return ParagraphFunctions
 				end
 
-				function SectionFunctions:Divider()
+				function SectionFunctions:Divider(Settings)
 					local DividerFunctions = {}
+					local hasLabel = type(Settings) == "table" and Settings.Label
 
 					local divider = Instance.new("Frame")
 					divider.Name = "Divider"
@@ -4878,19 +5074,58 @@ function MacLib:Window(Settings)
 					uIPadding.PaddingTop = UDim.new(0, 8)
 					uIPadding.Parent = divider
 
-					local uIListLayout = Instance.new("UIListLayout")
-					uIListLayout.Name = "UIListLayout"
-					uIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-					uIListLayout.Parent = divider
+					if hasLabel then
+						local line = Instance.new("Frame")
+						line.Name = "Line"
+						line.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+						line.BackgroundTransparency = 0.9
+						line.BorderColor3 = Color3.fromRGB(0, 0, 0)
+						line.BorderSizePixel = 0
+						line.Size = UDim2.new(1, 0, 0, 1)
+						line.AnchorPoint = Vector2.new(0, 0.5)
+						line.Position = UDim2.fromScale(0, 0.5)
+						line.Parent = divider
 
-					local line = Instance.new("Frame")
-					line.Name = "Line"
-					line.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					line.BackgroundTransparency = 0.9
-					line.BorderColor3 = Color3.fromRGB(0, 0, 0)
-					line.BorderSizePixel = 0
-					line.Size = UDim2.new(1, 0, 0, 1)
-					line.Parent = divider
+						local labelTag = Instance.new("TextLabel")
+						labelTag.Name = "DividerLabel"
+						labelTag.FontFace = Font.new(assets.interFont)
+						labelTag.Text = Settings.Label
+						labelTag.TextColor3 = Color3.fromRGB(255, 255, 255)
+						labelTag.TextSize = 11
+						labelTag.TextTransparency = 0.55
+						labelTag.RichText = true
+						labelTag.AutomaticSize = Enum.AutomaticSize.X
+						labelTag.BackgroundColor3 = Color3.fromRGB(13, 13, 13)
+						labelTag.BackgroundTransparency = 0
+						labelTag.BorderSizePixel = 0
+						labelTag.Size = UDim2.fromOffset(0, 13)
+						labelTag.AnchorPoint = Vector2.new(0.5, 0.5)
+						labelTag.Position = UDim2.fromScale(0.5, 0.5)
+						labelTag.ZIndex = 2
+						local labelPad = Instance.new("UIPadding")
+						labelPad.PaddingLeft = UDim.new(0, 6)
+						labelPad.PaddingRight = UDim.new(0, 6)
+						labelPad.Parent = labelTag
+						labelTag.Parent = divider
+
+						function DividerFunctions:UpdateLabel(New)
+							labelTag.Text = New
+						end
+					else
+						local uIListLayout = Instance.new("UIListLayout")
+						uIListLayout.Name = "UIListLayout"
+						uIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+						uIListLayout.Parent = divider
+
+						local line = Instance.new("Frame")
+						line.Name = "Line"
+						line.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+						line.BackgroundTransparency = 0.9
+						line.BorderColor3 = Color3.fromRGB(0, 0, 0)
+						line.BorderSizePixel = 0
+						line.Size = UDim2.new(1, 0, 0, 1)
+						line.Parent = divider
+					end
 
 					function DividerFunctions:Remove()
 						divider:Destroy()
@@ -5356,6 +5591,40 @@ function MacLib:Window(Settings)
 				tabSwitcher.Visible = State
 			end
 
+			function TabFunctions:SetBadge(Count)
+				if not TabFunctions._badgeFrame then
+					local badgeFrame = Instance.new("Frame")
+					badgeFrame.Name = "Badge"
+					badgeFrame.Size = UDim2.fromOffset(16, 16)
+					badgeFrame.AnchorPoint = Vector2.new(1, 0)
+					badgeFrame.Position = UDim2.new(1, -6, 0, 4)
+					badgeFrame.BackgroundColor3 = Color3.fromRGB(250, 93, 86)
+					badgeFrame.BorderSizePixel = 0
+					local badgeCorner = Instance.new("UICorner")
+					badgeCorner.CornerRadius = UDim.new(1, 0)
+					badgeCorner.Parent = badgeFrame
+					local badgeLabel = Instance.new("TextLabel")
+					badgeLabel.Name = "BadgeLabel"
+					badgeLabel.FontFace = Font.new(assets.interFont, Enum.FontWeight.SemiBold)
+					badgeLabel.Text = ""
+					badgeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+					badgeLabel.TextSize = 9
+					badgeLabel.BackgroundTransparency = 1
+					badgeLabel.BorderSizePixel = 0
+					badgeLabel.Size = UDim2.fromScale(1, 1)
+					badgeLabel.Parent = badgeFrame
+					badgeFrame.Parent = tabSwitcher
+					TabFunctions._badgeFrame = badgeFrame
+					TabFunctions._badgeLabel = badgeLabel
+				end
+				if not Count or Count <= 0 then
+					TabFunctions._badgeFrame.Visible = false
+				else
+					TabFunctions._badgeFrame.Visible = true
+					TabFunctions._badgeLabel.Text = Count > 99 and "99+" or tostring(Count)
+				end
+			end
+
 			function TabFunctions:InsertConfigSection(Side)
 				local configSection = TabFunctions:Section({ Side = "Left" })
 
@@ -5499,7 +5768,12 @@ function MacLib:Window(Settings)
 		return SectionFunctions
 	end
 
+	local maxNotifications = WindowFunctions.Settings.MaxNotifications or 5
+	local activeNotifications = 0
+
 	function WindowFunctions:Notify(Settings)
+		if activeNotifications >= maxNotifications then return nil end
+		activeNotifications += 1
 		local NotificationFunctions = {}
 
 		local notification = Instance.new("Frame")
@@ -5739,6 +6013,7 @@ function MacLib:Window(Settings)
 				local out = tweens.Out
 				out:Play()
 				out.Completed:Wait()
+				activeNotifications = math.max(0, activeNotifications - 1)
 				notification:Destroy()
 			end
 		end)
@@ -5762,6 +6037,7 @@ function MacLib:Window(Settings)
 			local out = tweens.Out
 			out:Play()
 			out.Completed:Wait()
+			activeNotifications = math.max(0, activeNotifications - 1)
 			notification:Destroy()
 		end
 
