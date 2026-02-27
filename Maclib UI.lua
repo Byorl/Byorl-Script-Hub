@@ -1,12 +1,12 @@
 local MacLib = { 
 	Options = {}, 
 	Folder = "Maclib", 
+	ConfigVersion = 1,
 	GetService = function(service)
 		return cloneref and cloneref(game:GetService(service)) or game:GetService(service)
 	end
 }
 
---// Services
 local TweenService = MacLib.GetService("TweenService")
 local RunService = MacLib.GetService("RunService")
 local HttpService = MacLib.GetService("HttpService")
@@ -15,7 +15,6 @@ local UserInputService = MacLib.GetService("UserInputService")
 local Lighting = MacLib.GetService("Lighting")
 local Players = MacLib.GetService("Players")
 
---// Variables
 local isStudio = RunService:IsStudio()
 local LocalPlayer = Players.LocalPlayer
 
@@ -1693,6 +1692,18 @@ function MacLib:Window(Settings)
 						buttonInteract.TextTransparency = State and 0.5 or 0.75
 						buttonImage.ImageTransparency = State and 0.5 or 0.75
 					end
+					function ButtonFunctions:SetIcon(Image)
+						buttonImage.Image = Image
+					end
+					function ButtonFunctions:Flash()
+						local flashStroke = Instance.new("UIStroke")
+						flashStroke.Color = Color3.fromRGB(255, 255, 255)
+						flashStroke.Transparency = 0.5
+						flashStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+						flashStroke.Parent = button
+						Tween(flashStroke, TweenInfo.new(0.4, Enum.EasingStyle.Sine), {Transparency = 1}):Play()
+						task.delay(0.4, function() flashStroke:Destroy() end)
+					end
 
 					if Flag then
 						MacLib.Options[Flag] = ButtonFunctions
@@ -1709,7 +1720,7 @@ function MacLib:Window(Settings)
 					toggle.BackgroundTransparency = 1
 					toggle.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					toggle.BorderSizePixel = 0
-					toggle.Size = UDim2.new(1, 0, 0, 38)
+					toggle.Size = UDim2.new(1, 0, 0, Settings.Description and 52 or 38)
 					toggle.Parent = section
 
 					local toggleName = Instance.new("TextLabel")
@@ -1723,15 +1734,34 @@ function MacLib:Window(Settings)
 					toggleName.TextTruncate = Enum.TextTruncate.AtEnd
 					toggleName.TextXAlignment = Enum.TextXAlignment.Left
 					toggleName.TextYAlignment = Enum.TextYAlignment.Top
-					toggleName.AnchorPoint = Vector2.new(0, 0.5)
+					toggleName.AnchorPoint = Settings.Description and Vector2.new(0, 0) or Vector2.new(0, 0.5)
 					toggleName.AutomaticSize = Enum.AutomaticSize.Y
 					toggleName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 					toggleName.BackgroundTransparency = 1
 					toggleName.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					toggleName.BorderSizePixel = 0
-					toggleName.Position = UDim2.fromScale(0, 0.5)
+					toggleName.Position = Settings.Description and UDim2.fromOffset(0, 10) or UDim2.fromScale(0, 0.5)
 					toggleName.Size = UDim2.new(1, -50, 0, 0)
 					toggleName.Parent = toggle
+
+					if Settings.Description then
+						local toggleDesc = Instance.new("TextLabel")
+						toggleDesc.Name = "ToggleDescription"
+						toggleDesc.FontFace = Font.new(assets.interFont)
+						toggleDesc.Text = Settings.Description
+						toggleDesc.TextColor3 = Color3.fromRGB(255, 255, 255)
+						toggleDesc.TextSize = 11
+						toggleDesc.TextTransparency = 0.7
+						toggleDesc.TextTruncate = Enum.TextTruncate.SplitWord
+						toggleDesc.TextWrapped = true
+						toggleDesc.TextXAlignment = Enum.TextXAlignment.Left
+						toggleDesc.AutomaticSize = Enum.AutomaticSize.Y
+						toggleDesc.BackgroundTransparency = 1
+						toggleDesc.BorderSizePixel = 0
+						toggleDesc.Position = UDim2.fromOffset(0, 28)
+						toggleDesc.Size = UDim2.new(1, -50, 0, 0)
+						toggleDesc.Parent = toggle
+					end
 
 					local toggle1 = Instance.new("ImageButton")
 					toggle1.Name = "Toggle"
@@ -1843,6 +1873,29 @@ function MacLib:Window(Settings)
 						else
 							NewState(togglebool)
 						end
+					end
+					function ToggleFunctions:SetIcon(Image)
+						if not ToggleFunctions._icon then
+							ToggleFunctions._icon = Instance.new("ImageLabel")
+							ToggleFunctions._icon.BackgroundTransparency = 1
+							ToggleFunctions._icon.BorderSizePixel = 0
+							ToggleFunctions._icon.AnchorPoint = Vector2.new(0, 0.5)
+							ToggleFunctions._icon.Position = UDim2.new(0, 0, 0.5, 0)
+							ToggleFunctions._icon.Size = UDim2.fromOffset(16, 16)
+							ToggleFunctions._icon.ImageTransparency = 0.4
+							ToggleFunctions._icon.Parent = toggle
+							toggleName.Position = UDim2.new(0, 22, 0.5, 0)
+						end
+						ToggleFunctions._icon.Image = Image
+					end
+					function ToggleFunctions:Flash()
+						local flashStroke = Instance.new("UIStroke")
+						flashStroke.Color = Color3.fromRGB(255, 255, 255)
+						flashStroke.Transparency = 0.5
+						flashStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+						flashStroke.Parent = toggle
+						Tween(flashStroke, TweenInfo.new(0.4, Enum.EasingStyle.Sine), {Transparency = 1}):Play()
+						task.delay(0.4, function() flashStroke:Destroy() end)
 					end
 
 					if Flag then
@@ -2113,6 +2166,29 @@ function MacLib:Window(Settings)
 					function SliderFunctions:GetValue()
 						return finalValue
 					end
+					function SliderFunctions:SetIcon(Image)
+						if not SliderFunctions._icon then
+							SliderFunctions._icon = Instance.new("ImageLabel")
+							SliderFunctions._icon.BackgroundTransparency = 1
+							SliderFunctions._icon.BorderSizePixel = 0
+							SliderFunctions._icon.AnchorPoint = Vector2.new(0, 0.5)
+							SliderFunctions._icon.Position = UDim2.new(0, 0, 0.5, 0)
+							SliderFunctions._icon.Size = UDim2.fromOffset(16, 16)
+							SliderFunctions._icon.ImageTransparency = 0.4
+							SliderFunctions._icon.Parent = slider
+							sliderName.Position = UDim2.new(0, 22, 0.5, 0)
+						end
+						SliderFunctions._icon.Image = Image
+					end
+					function SliderFunctions:Flash()
+						local flashStroke = Instance.new("UIStroke")
+						flashStroke.Color = Color3.fromRGB(255, 255, 255)
+						flashStroke.Transparency = 0.5
+						flashStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+						flashStroke.Parent = slider
+						Tween(flashStroke, TweenInfo.new(0.4, Enum.EasingStyle.Sine), {Transparency = 1}):Play()
+						task.delay(0.4, function() flashStroke:Destroy() end)
+					end
 
 					if Flag then
 						MacLib.Options[Flag] = SliderFunctions
@@ -2294,6 +2370,29 @@ function MacLib:Window(Settings)
 								InputFunctions.Settings.Callback(filteredText)
 							end
 						end)
+					end
+					function InputFunctions:SetIcon(Image)
+						if not InputFunctions._icon then
+							InputFunctions._icon = Instance.new("ImageLabel")
+							InputFunctions._icon.BackgroundTransparency = 1
+							InputFunctions._icon.BorderSizePixel = 0
+							InputFunctions._icon.AnchorPoint = Vector2.new(0, 0.5)
+							InputFunctions._icon.Position = UDim2.new(0, 0, 0.5, 0)
+							InputFunctions._icon.Size = UDim2.fromOffset(16, 16)
+							InputFunctions._icon.ImageTransparency = 0.4
+							InputFunctions._icon.Parent = input
+							inputName.Position = UDim2.new(0, 22, 0.5, 0)
+						end
+						InputFunctions._icon.Image = Image
+					end
+					function InputFunctions:Flash()
+						local flashStroke = Instance.new("UIStroke")
+						flashStroke.Color = Color3.fromRGB(255, 255, 255)
+						flashStroke.Transparency = 0.5
+						flashStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+						flashStroke.Parent = input
+						Tween(flashStroke, TweenInfo.new(0.4, Enum.EasingStyle.Sine), {Transparency = 1}):Play()
+						task.delay(0.4, function() flashStroke:Destroy() end)
 					end
 
 					if Flag then
@@ -2481,6 +2580,29 @@ function MacLib:Window(Settings)
 						binderBox.TextEditable = State
 						keybindName.TextTransparency = State and 0.5 or 0.75
 						binderBox.TextTransparency = State and 0.1 or 0.5
+					end
+					function KeybindFunctions:SetIcon(Image)
+						if not KeybindFunctions._icon then
+							KeybindFunctions._icon = Instance.new("ImageLabel")
+							KeybindFunctions._icon.BackgroundTransparency = 1
+							KeybindFunctions._icon.BorderSizePixel = 0
+							KeybindFunctions._icon.AnchorPoint = Vector2.new(0, 0.5)
+							KeybindFunctions._icon.Position = UDim2.new(0, 0, 0.5, 0)
+							KeybindFunctions._icon.Size = UDim2.fromOffset(16, 16)
+							KeybindFunctions._icon.ImageTransparency = 0.4
+							KeybindFunctions._icon.Parent = keybind
+							keybindName.Position = UDim2.new(0, 22, 0.5, 0)
+						end
+						KeybindFunctions._icon.Image = Image
+					end
+					function KeybindFunctions:Flash()
+						local flashStroke = Instance.new("UIStroke")
+						flashStroke.Color = Color3.fromRGB(255, 255, 255)
+						flashStroke.Transparency = 0.5
+						flashStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+						flashStroke.Parent = keybind
+						Tween(flashStroke, TweenInfo.new(0.4, Enum.EasingStyle.Sine), {Transparency = 1}):Play()
+						task.delay(0.4, function() flashStroke:Destroy() end)
 					end
 
 					if Flag then
@@ -2961,6 +3083,15 @@ function MacLib:Window(Settings)
 						dropdownEnabled = State
 						dropdownName.TextTransparency = State and 0.5 or 0.75
 						dropdownImage.ImageTransparency = State and 0.5 or 0.75
+					end
+					function DropdownFunctions:Flash()
+						local flashStroke = Instance.new("UIStroke")
+						flashStroke.Color = Color3.fromRGB(255, 255, 255)
+						flashStroke.Transparency = 0.5
+						flashStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+						flashStroke.Parent = dropdown
+						Tween(flashStroke, TweenInfo.new(0.4, Enum.EasingStyle.Sine), {Transparency = 1}):Play()
+						task.delay(0.4, function() flashStroke:Destroy() end)
 					end
 					function DropdownFunctions:UpdateSelection(newSelection)
 						if not newSelection then return end
@@ -4352,6 +4483,34 @@ function MacLib:Window(Settings)
 						colorC.Transparency = alpha
 						updateFromSettings()
 					end
+					function ColorpickerFunctions:SetEnabled(State)
+						colorpickerEnabled = State
+						colorpickerName.TextTransparency = State and 0.5 or 0.75
+						color1.BackgroundTransparency = State and (isAlpha and ColorpickerFunctions.Alpha or 0) or 0.7
+					end
+					function ColorpickerFunctions:SetIcon(Image)
+						if not ColorpickerFunctions._icon then
+							ColorpickerFunctions._icon = Instance.new("ImageLabel")
+							ColorpickerFunctions._icon.BackgroundTransparency = 1
+							ColorpickerFunctions._icon.BorderSizePixel = 0
+							ColorpickerFunctions._icon.AnchorPoint = Vector2.new(0, 0.5)
+							ColorpickerFunctions._icon.Position = UDim2.new(0, 0, 0.5, 0)
+							ColorpickerFunctions._icon.Size = UDim2.fromOffset(16, 16)
+							ColorpickerFunctions._icon.ImageTransparency = 0.4
+							ColorpickerFunctions._icon.Parent = colorpicker
+							colorpickerName.Position = UDim2.new(0, 22, 0.5, 0)
+						end
+						ColorpickerFunctions._icon.Image = Image
+					end
+					function ColorpickerFunctions:Flash()
+						local flashStroke = Instance.new("UIStroke")
+						flashStroke.Color = Color3.fromRGB(255, 255, 255)
+						flashStroke.Transparency = 0.5
+						flashStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+						flashStroke.Parent = colorpicker
+						Tween(flashStroke, TweenInfo.new(0.4, Enum.EasingStyle.Sine), {Transparency = 1}):Play()
+						task.delay(0.4, function() flashStroke:Destroy() end)
+					end
 
 					if Flag then
 						MacLib.Options[Flag] = ColorpickerFunctions
@@ -4657,6 +4816,388 @@ function MacLib:Window(Settings)
 					return SpacerFunctions
 				end
 
+				function SectionFunctions:ProgressBar(Settings, Flag)
+					local ProgressFunctions = { Settings = Settings }
+					local minVal = Settings.Min or 0
+					local maxVal = Settings.Max or 100
+					local currentValue = math.clamp(Settings.Default or minVal, minVal, maxVal)
+
+					local progressOuter = Instance.new("Frame")
+					progressOuter.Name = "ProgressBar"
+					progressOuter.AutomaticSize = Enum.AutomaticSize.Y
+					progressOuter.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+					progressOuter.BackgroundTransparency = 1
+					progressOuter.BorderSizePixel = 0
+					progressOuter.Size = UDim2.new(1, 0, 0, 0)
+					progressOuter.Parent = section
+
+					local progressOuterUIListLayout = Instance.new("UIListLayout")
+					progressOuterUIListLayout.Padding = UDim.new(0, 6)
+					progressOuterUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+					progressOuterUIListLayout.Parent = progressOuter
+
+					local headerFrame = Instance.new("Frame")
+					headerFrame.BackgroundTransparency = 1
+					headerFrame.BorderSizePixel = 0
+					headerFrame.Size = UDim2.new(1, 0, 0, 18)
+					headerFrame.LayoutOrder = 0
+					headerFrame.Parent = progressOuter
+
+					local progressName = Instance.new("TextLabel")
+					progressName.Name = "ProgressName"
+					progressName.FontFace = Font.new(assets.interFont)
+					progressName.Text = Settings.Name
+					progressName.TextColor3 = Color3.fromRGB(255, 255, 255)
+					progressName.TextSize = 13
+					progressName.TextTransparency = 0.5
+					progressName.TextXAlignment = Enum.TextXAlignment.Left
+					progressName.AutomaticSize = Enum.AutomaticSize.Y
+					progressName.BackgroundTransparency = 1
+					progressName.BorderSizePixel = 0
+					progressName.Size = UDim2.new(1, -65, 1, 0)
+					progressName.Parent = headerFrame
+
+					local progressValueText = Instance.new("TextLabel")
+					progressValueText.Name = "ProgressValue"
+					progressValueText.FontFace = Font.new(assets.interFont)
+					progressValueText.TextColor3 = Color3.fromRGB(255, 255, 255)
+					progressValueText.TextSize = 11
+					progressValueText.TextTransparency = 0.6
+					progressValueText.TextXAlignment = Enum.TextXAlignment.Right
+					progressValueText.BackgroundTransparency = 1
+					progressValueText.BorderSizePixel = 0
+					progressValueText.AnchorPoint = Vector2.new(1, 0)
+					progressValueText.Position = UDim2.fromScale(1, 0)
+					progressValueText.Size = UDim2.new(0, 60, 1, 0)
+					progressValueText.Parent = headerFrame
+
+					local progressTrack = Instance.new("Frame")
+					progressTrack.Name = "ProgressTrack"
+					progressTrack.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					progressTrack.BackgroundTransparency = 0.93
+					progressTrack.BorderSizePixel = 0
+					progressTrack.Size = UDim2.new(1, 0, 0, 4)
+					progressTrack.ClipsDescendants = true
+					progressTrack.LayoutOrder = 1
+					progressTrack.Parent = progressOuter
+
+					local progressTrackUICorner = Instance.new("UICorner")
+					progressTrackUICorner.CornerRadius = UDim.new(1, 0)
+					progressTrackUICorner.Parent = progressTrack
+
+					local progressFillBar = Instance.new("Frame")
+					progressFillBar.Name = "ProgressFill"
+					progressFillBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					progressFillBar.BackgroundTransparency = 0.5
+					progressFillBar.BorderSizePixel = 0
+					progressFillBar.Size = UDim2.fromScale(0, 1)
+					progressFillBar.Parent = progressTrack
+
+					local progressFillUICorner = Instance.new("UICorner")
+					progressFillUICorner.CornerRadius = UDim.new(1, 0)
+					progressFillUICorner.Parent = progressFillBar
+
+					local function UpdateProgress()
+						local ratio = math.clamp((currentValue - minVal) / math.max(maxVal - minVal, 1e-5), 0, 1)
+						progressFillBar.Size = UDim2.fromScale(ratio, 1)
+						progressValueText.Text = tostring(math.round(currentValue)) .. " / " .. tostring(maxVal)
+					end
+
+					UpdateProgress()
+
+					function ProgressFunctions:SetValue(value)
+						currentValue = math.clamp(tonumber(value) or currentValue, minVal, maxVal)
+						local ratio = math.clamp((currentValue - minVal) / math.max(maxVal - minVal, 1e-5), 0, 1)
+						Tween(progressFillBar, TweenInfo.new(0.15, Enum.EasingStyle.Sine), {
+							Size = UDim2.fromScale(ratio, 1)
+						}):Play()
+						progressValueText.Text = tostring(math.round(currentValue)) .. " / " .. tostring(maxVal)
+					end
+					function ProgressFunctions:GetValue()
+						return currentValue
+					end
+					function ProgressFunctions:UpdateName(Name)
+						progressName.Text = Name
+					end
+					function ProgressFunctions:SetVisibility(State)
+						progressOuter.Visible = State
+					end
+					function ProgressFunctions:Flash()
+						local flashStroke = Instance.new("UIStroke")
+						flashStroke.Color = Color3.fromRGB(255, 255, 255)
+						flashStroke.Transparency = 0.5
+						flashStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+						flashStroke.Parent = progressOuter
+						Tween(flashStroke, TweenInfo.new(0.4, Enum.EasingStyle.Sine), {Transparency = 1}):Play()
+						task.delay(0.4, function() flashStroke:Destroy() end)
+					end
+					if Flag then
+						MacLib.Options[Flag] = ProgressFunctions
+					end
+					return ProgressFunctions
+				end
+
+				function SectionFunctions:MultiSlider(Settings, Flag)
+					local MultiSliderFunctions = { Settings = Settings, IgnoreConfig = false, Class = "MultiSlider" }
+					local minVal = Settings.Minimum or 0
+					local maxVal = Settings.Maximum or 100
+					local currentLow = math.clamp(Settings.DefaultLow or minVal, minVal, maxVal)
+					local currentHigh = math.clamp(Settings.DefaultHigh or maxVal, minVal, maxVal)
+
+					local multiSlider = Instance.new("Frame")
+					multiSlider.Name = "MultiSlider"
+					multiSlider.AutomaticSize = Enum.AutomaticSize.Y
+					multiSlider.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+					multiSlider.BackgroundTransparency = 1
+					multiSlider.BorderSizePixel = 0
+					multiSlider.Size = UDim2.new(1, 0, 0, 38)
+					multiSlider.Parent = section
+
+					local multiSliderName = Instance.new("TextLabel")
+					multiSliderName.Name = "MultiSliderName"
+					multiSliderName.FontFace = Font.new(assets.interFont)
+					multiSliderName.Text = Settings.Name
+					multiSliderName.TextColor3 = Color3.fromRGB(255, 255, 255)
+					multiSliderName.TextSize = 13
+					multiSliderName.TextTransparency = 0.5
+					multiSliderName.TextXAlignment = Enum.TextXAlignment.Left
+					multiSliderName.TextYAlignment = Enum.TextYAlignment.Top
+					multiSliderName.AnchorPoint = Vector2.new(0, 0.5)
+					multiSliderName.AutomaticSize = Enum.AutomaticSize.XY
+					multiSliderName.BackgroundTransparency = 1
+					multiSliderName.BorderSizePixel = 0
+					multiSliderName.Position = UDim2.fromScale(1.3e-07, 0.5)
+					multiSliderName.Parent = multiSlider
+
+					local msElements = Instance.new("Frame")
+					msElements.Name = "MultiSliderElements"
+					msElements.AnchorPoint = Vector2.new(1, 0)
+					msElements.BackgroundTransparency = 1
+					msElements.BorderSizePixel = 0
+					msElements.Position = UDim2.fromScale(1, 0)
+					msElements.Size = UDim2.fromScale(1, 1)
+
+					local msValueText = Instance.new("TextLabel")
+					msValueText.Name = "MSValue"
+					msValueText.FontFace = Font.new(assets.interFont)
+					msValueText.TextColor3 = Color3.fromRGB(255, 255, 255)
+					msValueText.TextSize = 12
+					msValueText.TextTransparency = 0.1
+					msValueText.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					msValueText.BackgroundTransparency = 0.95
+					msValueText.BorderSizePixel = 0
+					msValueText.LayoutOrder = 1
+					msValueText.Size = UDim2.fromOffset(70, 21)
+					msValueText.ClipsDescendants = true
+
+					local msValueUICorner = Instance.new("UICorner")
+					msValueUICorner.CornerRadius = UDim.new(0, 4)
+					msValueUICorner.Parent = msValueText
+
+					local msValueUIStroke = Instance.new("UIStroke")
+					msValueUIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+					msValueUIStroke.Color = Color3.fromRGB(255, 255, 255)
+					msValueUIStroke.Transparency = 0.9
+					msValueUIStroke.Parent = msValueText
+
+					msValueText.Parent = msElements
+
+					local msElementsUIListLayout = Instance.new("UIListLayout")
+					msElementsUIListLayout.Padding = UDim.new(0, 20)
+					msElementsUIListLayout.FillDirection = Enum.FillDirection.Horizontal
+					msElementsUIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+					msElementsUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+					msElementsUIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+					msElementsUIListLayout.Parent = msElements
+
+					local msElementsUIPadding = Instance.new("UIPadding")
+					msElementsUIPadding.PaddingTop = UDim.new(0, 3)
+					msElementsUIPadding.Parent = msElements
+
+					local msBar = Instance.new("ImageLabel")
+					msBar.Name = "MSBar"
+					msBar.Image = assets.sliderbar
+					msBar.ImageColor3 = Color3.fromRGB(87, 86, 86)
+					msBar.BackgroundTransparency = 1
+					msBar.BorderSizePixel = 0
+					msBar.Position = UDim2.fromScale(0.219, 0.457)
+					msBar.Size = UDim2.fromOffset(123, 3)
+					msBar.Parent = msElements
+
+					local msRangeFill = Instance.new("Frame")
+					msRangeFill.Name = "MSRangeFill"
+					msRangeFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					msRangeFill.BackgroundTransparency = 0.7
+					msRangeFill.BorderSizePixel = 0
+					msRangeFill.Size = UDim2.fromScale(0, 1)
+					msRangeFill.Parent = msBar
+
+					local msHeadLow = Instance.new("ImageButton")
+					msHeadLow.Name = "MSHeadLow"
+					msHeadLow.Image = assets.sliderhead
+					msHeadLow.AnchorPoint = Vector2.new(0.5, 0.5)
+					msHeadLow.AutoButtonColor = false
+					msHeadLow.BackgroundTransparency = 1
+					msHeadLow.BorderSizePixel = 0
+					msHeadLow.Size = UDim2.fromOffset(12, 12)
+					msHeadLow.Parent = msBar
+
+					local msHeadHigh = Instance.new("ImageButton")
+					msHeadHigh.Name = "MSHeadHigh"
+					msHeadHigh.Image = assets.sliderhead
+					msHeadHigh.AnchorPoint = Vector2.new(0.5, 0.5)
+					msHeadHigh.AutoButtonColor = false
+					msHeadHigh.BackgroundTransparency = 1
+					msHeadHigh.BorderSizePixel = 0
+					msHeadHigh.Size = UDim2.fromOffset(12, 12)
+					msHeadHigh.Parent = msBar
+
+					msElements.Parent = multiSlider
+
+					local draggingLow = false
+					local draggingHigh = false
+					local multiSliderEnabled = true
+
+					local function ValueToScale(val)
+						return (val - minVal) / math.max(maxVal - minVal, 1e-5)
+					end
+
+					local function PosToValue(posX)
+						local scale = math.clamp((posX - msBar.AbsolutePosition.X) / msBar.AbsoluteSize.X, 0, 1)
+						local raw = scale * (maxVal - minVal) + minVal
+						if Settings.Precision then
+							return tonumber(string.format("%." .. Settings.Precision .. "f", raw))
+						end
+						return math.round(raw)
+					end
+
+					local function UpdateVisuals()
+						local lowScale = ValueToScale(currentLow)
+						local highScale = ValueToScale(currentHigh)
+						msHeadLow.Position = UDim2.new(lowScale, 0, 0.5, 0)
+						msHeadHigh.Position = UDim2.new(highScale, 0, 0.5, 0)
+						msRangeFill.Position = UDim2.fromScale(lowScale, 0)
+						msRangeFill.Size = UDim2.fromScale(highScale - lowScale, 1)
+						msValueText.Text = tostring(currentLow) .. " \xe2\x80\x93 " .. tostring(currentHigh)
+						MultiSliderFunctions.Value = { currentLow, currentHigh }
+					end
+
+					UpdateVisuals()
+
+					msHeadLow.InputBegan:Connect(function(input)
+						if not multiSliderEnabled then return end
+						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+							draggingLow = true
+						end
+					end)
+					msHeadLow.InputEnded:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+							draggingLow = false
+							if Settings.onInputComplete then Settings.onInputComplete(currentLow, currentHigh) end
+						end
+					end)
+					msHeadHigh.InputBegan:Connect(function(input)
+						if not multiSliderEnabled then return end
+						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+							draggingHigh = true
+						end
+					end)
+					msHeadHigh.InputEnded:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+							draggingHigh = false
+							if Settings.onInputComplete then Settings.onInputComplete(currentLow, currentHigh) end
+						end
+					end)
+
+					UserInputService.InputChanged:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+							if draggingLow then
+								currentLow = math.clamp(PosToValue(input.Position.X), minVal, currentHigh)
+								UpdateVisuals()
+								if Settings.Callback then task.spawn(Settings.Callback, currentLow, currentHigh) end
+							elseif draggingHigh then
+								currentHigh = math.clamp(PosToValue(input.Position.X), currentLow, maxVal)
+								UpdateVisuals()
+								if Settings.Callback then task.spawn(Settings.Callback, currentLow, currentHigh) end
+							end
+						end
+					end)
+
+					local function updateMSBarSize()
+						local padding = msElementsUIListLayout.Padding.Offset
+						local valueWidth = msValueText.AbsoluteSize.X
+						local nameWidth = multiSliderName.AbsoluteSize.X
+						local totalWidth = msElements.AbsoluteSize.X
+						local newBarWidth = (totalWidth - (padding + valueWidth + nameWidth + 20)) / baseUIScale.Scale
+						msBar.Size = UDim2.new(msBar.Size.X.Scale, newBarWidth, msBar.Size.Y.Scale, msBar.Size.Y.Offset)
+					end
+
+					updateMSBarSize()
+					multiSliderName:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateMSBarSize)
+					section:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateMSBarSize)
+
+					function MultiSliderFunctions:UpdateName(Name)
+						multiSliderName.Text = Name
+					end
+					function MultiSliderFunctions:SetVisibility(State)
+						multiSlider.Visible = State
+					end
+					function MultiSliderFunctions:SetEnabled(State)
+						multiSliderEnabled = State
+						multiSliderName.TextTransparency = State and 0.5 or 0.75
+						msBar.ImageColor3 = State and Color3.fromRGB(87, 86, 86) or Color3.fromRGB(50, 50, 50)
+						msHeadLow.ImageColor3 = State and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(130, 130, 130)
+						msHeadHigh.ImageColor3 = State and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(130, 130, 130)
+					end
+					function MultiSliderFunctions:SetValues(low, high)
+						currentLow = math.clamp(tonumber(low) or currentLow, minVal, maxVal)
+						currentHigh = math.clamp(tonumber(high) or currentHigh, currentLow, maxVal)
+						UpdateVisuals()
+					end
+					function MultiSliderFunctions:GetValue()
+						return currentLow, currentHigh
+					end
+					function MultiSliderFunctions:SetIcon(Image)
+						if not MultiSliderFunctions._icon then
+							MultiSliderFunctions._icon = Instance.new("ImageLabel")
+							MultiSliderFunctions._icon.BackgroundTransparency = 1
+							MultiSliderFunctions._icon.BorderSizePixel = 0
+							MultiSliderFunctions._icon.AnchorPoint = Vector2.new(0, 0.5)
+							MultiSliderFunctions._icon.Position = UDim2.new(0, 0, 0.5, 0)
+							MultiSliderFunctions._icon.Size = UDim2.fromOffset(16, 16)
+							MultiSliderFunctions._icon.ImageTransparency = 0.4
+							MultiSliderFunctions._icon.Parent = multiSlider
+							multiSliderName.Position = UDim2.new(0, 22, 0.5, 0)
+						end
+						MultiSliderFunctions._icon.Image = Image
+					end
+					function MultiSliderFunctions:Flash()
+						local flashStroke = Instance.new("UIStroke")
+						flashStroke.Color = Color3.fromRGB(255, 255, 255)
+						flashStroke.Transparency = 0.5
+						flashStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+						flashStroke.Parent = multiSlider
+						Tween(flashStroke, TweenInfo.new(0.4, Enum.EasingStyle.Sine), {Transparency = 1}):Play()
+						task.delay(0.4, function() flashStroke:Destroy() end)
+					end
+					if Flag then
+						MacLib.Options[Flag] = MultiSliderFunctions
+					end
+					return MultiSliderFunctions
+				end
+
+				function SectionFunctions:SetVisible(State)
+					section.Visible = State
+				end
+				function SectionFunctions:Clear()
+					for _, child in ipairs(section:GetChildren()) do
+						if not child:IsA("UIListLayout") and not child:IsA("UIPadding")
+							and not child:IsA("UICorner") and not child:IsA("UIStroke") then
+							child:Destroy()
+						end
+					end
+				end
+
 				return SectionFunctions
 			end
 
@@ -4839,6 +5380,8 @@ function MacLib:Window(Settings)
 				tabStroke = tabSwitcherUIStroke,
 				switcherImage = tabImage,
 				switcherName = tabSwitcherName,
+				name = Settings.Name,
+				select = SelectCurrentTab,
 			}
 
 			return TabFunctions
@@ -5050,6 +5593,32 @@ function MacLib:Window(Settings)
 			end)
 		end
 
+		local notificationProgressFill = nil
+		if Settings.Progress then
+			notificationUIPadding.PaddingBottom = UDim.new(0, 22)
+			local progTrack = Instance.new("Frame")
+			progTrack.AnchorPoint = Vector2.new(0, 1)
+			progTrack.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			progTrack.BackgroundTransparency = 0.92
+			progTrack.BorderSizePixel = 0
+			progTrack.Position = UDim2.new(0, 0, 1, -12)
+			progTrack.Size = UDim2.new(1, 0, 0, 3)
+			progTrack.ClipsDescendants = true
+			local progTrackCorner = Instance.new("UICorner")
+			progTrackCorner.CornerRadius = UDim.new(1, 0)
+			progTrackCorner.Parent = progTrack
+			notificationProgressFill = Instance.new("Frame")
+			notificationProgressFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			notificationProgressFill.BackgroundTransparency = 0.4
+			notificationProgressFill.BorderSizePixel = 0
+			notificationProgressFill.Size = UDim2.fromScale(0, 1)
+			local progFillCorner = Instance.new("UICorner")
+			progFillCorner.CornerRadius = UDim.new(1, 0)
+			progFillCorner.Parent = notificationProgressFill
+			notificationProgressFill.Parent = progTrack
+			progTrack.Parent = notificationInformation
+		end
+
 		local AnimateNotification = task.spawn(function()
 			tweens.In:Play()
 
@@ -5085,6 +5654,15 @@ function MacLib:Window(Settings)
 			out:Play()
 			out.Completed:Wait()
 			notification:Destroy()
+		end
+
+		function NotificationFunctions:SetProgress(ratio)
+			if notificationProgressFill then
+				local r = math.clamp(ratio, 0, 1)
+				Tween(notificationProgressFill, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {
+					Size = UDim2.fromScale(r, 1)
+				}):Play()
+			end
 		end
 
 		return NotificationFunctions
@@ -5474,6 +6052,20 @@ function MacLib:Window(Settings)
 		return baseUIScale.Scale
 	end
 
+	function WindowFunctions:GetElement(Flag)
+		return MacLib.Options[Flag]
+	end
+
+	function WindowFunctions:SetPage(Name)
+		for _, info in pairs(tabs) do
+			if info.name == Name then
+				info.select()
+				return true
+			end
+		end
+		return false
+	end
+
 	local ClassParser = {
 		["Toggle"] = {
 			Save = function(Flag, data)
@@ -5543,6 +6135,22 @@ function MacLib:Window(Settings)
 			Load = function(Flag, data)
 				if MacLib.Options[Flag] and data.value then
 					MacLib.Options[Flag]:UpdateSelection(data.value)
+				end
+			end
+		},
+		["MultiSlider"] = {
+			Save = function(Flag, data)
+				local v = data.Value
+				return {
+					type = "MultiSlider",
+					flag = Flag,
+					low = v and tostring(v[1]) or nil,
+					high = v and tostring(v[2]) or nil,
+				}
+			end,
+			Load = function(Flag, data)
+				if MacLib.Options[Flag] and data.low and data.high then
+					MacLib.Options[Flag]:SetValues(tonumber(data.low), tonumber(data.high))
 				end
 			end
 		},
@@ -5631,6 +6239,7 @@ function MacLib:Window(Settings)
 		local fullPath = MacLib.Folder .. "/settings/" .. Path .. ".json"
 
 		local data = {
+			version = MacLib.ConfigVersion,
 			objects = {}
 		}
 
@@ -5662,6 +6271,10 @@ function MacLib:Window(Settings)
 
 		local success, decoded = pcall(HttpService.JSONDecode, HttpService, readfile(file))
 		if not success then return false, "Unable to decode JSON data." end
+
+		if decoded.version and MacLib.ConfigVersion and decoded.version ~= MacLib.ConfigVersion then
+			warn("[Maclib] Config version mismatch: saved=" .. tostring(decoded.version) .. ", expected=" .. tostring(MacLib.ConfigVersion))
+		end
 
 		for _, option in next, decoded.objects do
 			if ClassParser[option.type] then
