@@ -2728,8 +2728,23 @@ function MacLib:Window(Settings)
 					binderBoxUISizeConstraint.Name = "BinderBoxUISizeConstraint"
 					binderBoxUISizeConstraint.Parent = binderBox
 
+					local holdBar = Instance.new("Frame")
+					holdBar.Name = "HoldBar"
+					holdBar.Position = UDim2.fromOffset(0, 36)
+					holdBar.Size = UDim2.new(1, 0, 0, 2)
+					holdBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					holdBar.BackgroundTransparency = 0.3
+					holdBar.BorderSizePixel = 0
+					holdBar.Visible = false
+					holdBar.ZIndex = 3
+					local holdBarCorner = Instance.new("UICorner")
+					holdBarCorner.CornerRadius = UDim.new(0, 1)
+					holdBarCorner.Parent = holdBar
+					holdBar.Parent = keybind
+
 					binderBox.Parent = keybind
 
+					local holdTween = nil
 					local focused
 					local isBinding = false
 					local reset = false
@@ -2791,6 +2806,15 @@ function MacLib:Window(Settings)
 									if KeybindFunctions.Settings.Callback then
 										KeybindFunctions.Settings.Callback(true)
 									end
+									if Settings.HoldDuration and Settings.HoldDuration > 0 then
+										if holdTween then pcall(function() holdTween:Cancel() end) end
+										holdBar.Size = UDim2.new(1, 0, 0, 2)
+										holdBar.Visible = true
+										holdTween = Tween(holdBar, TweenInfo.new(Settings.HoldDuration, Enum.EasingStyle.Linear), {
+											Size = UDim2.new(0, 0, 0, 2)
+										})
+										holdTween:Play()
+									end
 								elseif mode == "Toggle" then
 									holdToggleState = not holdToggleState
 									if KeybindFunctions.Settings.Callback then
@@ -2816,6 +2840,11 @@ function MacLib:Window(Settings)
 								if KeybindFunctions.Settings.Mode == "Hold" then
 									if KeybindFunctions.Settings.Callback then
 										KeybindFunctions.Settings.Callback(false)
+									end
+									if Settings.HoldDuration and Settings.HoldDuration > 0 then
+										if holdTween then pcall(function() holdTween:Cancel() end) end
+										holdBar.Visible = false
+										holdBar.Size = UDim2.new(1, 0, 0, 2)
 									end
 								else
 									if Settings.onBindHeld then
@@ -5244,7 +5273,7 @@ function MacLib:Window(Settings)
 					local function UpdateProgress()
 						local ratio = math.clamp((currentValue - minVal) / math.max(maxVal - minVal, 1e-5), 0, 1)
 						progressFillBar.Size = UDim2.fromScale(ratio, 1)
-						progressValueText.Text = tostring(math.round(currentValue)) .. " / " .. tostring(maxVal)
+						progressValueText.Text = tostring(math.round(currentValue)) .. " / " .. tostring(maxVal) .. (Settings.Suffix or "")
 					end
 
 					UpdateProgress()
@@ -5255,8 +5284,9 @@ function MacLib:Window(Settings)
 						Tween(progressFillBar, TweenInfo.new(0.15, Enum.EasingStyle.Sine), {
 							Size = UDim2.fromScale(ratio, 1)
 						}):Play()
-						progressValueText.Text = tostring(math.round(currentValue)) .. " / " .. tostring(maxVal)
+						progressValueText.Text = tostring(math.round(currentValue)) .. " / " .. tostring(maxVal) .. (Settings.Suffix or "")
 					end
+					ProgressFunctions.SetProgress = ProgressFunctions.SetValue
 					function ProgressFunctions:GetValue()
 						return currentValue
 					end
@@ -5530,6 +5560,162 @@ function MacLib:Window(Settings)
 					return MultiSliderFunctions
 				end
 
+				function SectionFunctions:RadioGroup(Settings, Flag)
+					local RadioGroupFunctions = { Settings = Settings, IgnoreConfig = false, Class = "RadioGroup", Value = Settings.Default }
+					local rgEnabled = true
+					local selected = Settings.Default
+
+					local rgFrame = Instance.new("Frame")
+					rgFrame.Name = "RadioGroup"
+					rgFrame.AutomaticSize = Enum.AutomaticSize.Y
+					rgFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+					rgFrame.BackgroundTransparency = 1
+					rgFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+					rgFrame.BorderSizePixel = 0
+					rgFrame.Size = UDim2.new(1, 0, 0, 38)
+					rgFrame.Parent = section
+
+					local rgName = Instance.new("TextLabel")
+					rgName.Name = "RadioGroupName"
+					rgName.FontFace = Font.new(assets.interFont)
+					rgName.Text = Settings.Name
+					rgName.RichText = true
+					rgName.TextColor3 = Color3.fromRGB(255, 255, 255)
+					rgName.TextSize = 13
+					rgName.TextTransparency = 0.5
+					rgName.TextTruncate = Enum.TextTruncate.AtEnd
+					rgName.TextXAlignment = Enum.TextXAlignment.Left
+					rgName.TextYAlignment = Enum.TextYAlignment.Top
+					rgName.AnchorPoint = Vector2.new(0, 0.5)
+					rgName.AutomaticSize = Enum.AutomaticSize.XY
+					rgName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					rgName.BackgroundTransparency = 1
+					rgName.BorderColor3 = Color3.fromRGB(0, 0, 0)
+					rgName.BorderSizePixel = 0
+					rgName.Position = UDim2.fromScale(0, 0.5)
+					rgName.Parent = rgFrame
+
+					local rgButtons = Instance.new("Frame")
+					rgButtons.Name = "RadioGroupButtons"
+					rgButtons.AnchorPoint = Vector2.new(1, 0.5)
+					rgButtons.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					rgButtons.BackgroundTransparency = 1
+					rgButtons.BorderColor3 = Color3.fromRGB(0, 0, 0)
+					rgButtons.BorderSizePixel = 0
+					rgButtons.Position = UDim2.fromScale(1, 0.5)
+					rgButtons.AutomaticSize = Enum.AutomaticSize.X
+					rgButtons.Size = UDim2.fromOffset(0, 21)
+
+					local rgLayout = Instance.new("UIListLayout")
+					rgLayout.FillDirection = Enum.FillDirection.Horizontal
+					rgLayout.Padding = UDim.new(0, 4)
+					rgLayout.SortOrder = Enum.SortOrder.LayoutOrder
+					rgLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+					rgLayout.Parent = rgButtons
+					rgButtons.Parent = rgFrame
+
+					local buttonInstances = {}
+
+					local function SetSelected(val, ignoreCallback)
+						selected = val
+						RadioGroupFunctions.Value = val
+						for opt, btn in pairs(buttonInstances) do
+							local active = opt == val
+							local stroke = btn:FindFirstChildOfClass("UIStroke")
+							btn.BackgroundTransparency = active and 0.85 or 0.95
+							btn.TextTransparency = active and 0.05 or 0.5
+							if stroke then stroke.Transparency = active and 0.65 or 0.9 end
+						end
+						if not ignoreCallback and Settings.Callback then
+							task.spawn(Settings.Callback, val)
+						end
+					end
+
+					for i, opt in ipairs(Settings.Options) do
+						local btn = Instance.new("TextButton")
+						btn.Name = opt
+						btn.FontFace = Font.new(assets.interFont)
+						btn.Text = opt
+						btn.TextSize = 12
+						btn.TextTransparency = 0.5
+						btn.AutoButtonColor = false
+						btn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+						btn.BackgroundTransparency = 0.95
+						btn.BorderColor3 = Color3.fromRGB(0, 0, 0)
+						btn.BorderSizePixel = 0
+						btn.AutomaticSize = Enum.AutomaticSize.X
+						btn.Size = UDim2.fromOffset(0, 21)
+						btn.LayoutOrder = i
+						local btnCorner = Instance.new("UICorner")
+						btnCorner.CornerRadius = UDim.new(0, 4)
+						btnCorner.Parent = btn
+						local btnStroke = Instance.new("UIStroke")
+						btnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+						btnStroke.Color = Color3.fromRGB(255, 255, 255)
+						btnStroke.Transparency = 0.9
+						btnStroke.Parent = btn
+						local btnPad = Instance.new("UIPadding")
+						btnPad.PaddingLeft = UDim.new(0, 7)
+						btnPad.PaddingRight = UDim.new(0, 7)
+						btnPad.Parent = btn
+						btn.MouseButton1Click:Connect(function()
+							if not rgEnabled then return end
+							SetSelected(opt)
+						end)
+						buttonInstances[opt] = btn
+						btn.Parent = rgButtons
+					end
+
+					SetSelected(selected, true)
+
+					function RadioGroupFunctions:UpdateName(Name)
+						rgName.Text = Name
+					end
+					function RadioGroupFunctions:SetVisibility(State)
+						rgFrame.Visible = State
+					end
+					function RadioGroupFunctions:SetEnabled(State)
+						rgEnabled = State
+						rgName.TextTransparency = State and 0.5 or 0.75
+						for opt, btn in pairs(buttonInstances) do
+							local stroke = btn:FindFirstChildOfClass("UIStroke")
+							if State then
+								local active = opt == selected
+								btn.BackgroundTransparency = active and 0.85 or 0.95
+								btn.TextTransparency = active and 0.05 or 0.5
+								if stroke then stroke.Transparency = active and 0.65 or 0.9 end
+							else
+								btn.BackgroundTransparency = 0.97
+								btn.TextTransparency = 0.75
+								if stroke then stroke.Transparency = 0.95 end
+							end
+						end
+					end
+					function RadioGroupFunctions:SetValue(val)
+						SetSelected(val, true)
+					end
+					function RadioGroupFunctions:GetValue()
+						return selected
+					end
+					function RadioGroupFunctions:Flash()
+						local flashStroke = Instance.new("UIStroke")
+						flashStroke.Color = Color3.fromRGB(255, 255, 255)
+						flashStroke.Transparency = 0.5
+						flashStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+						flashStroke.Parent = rgFrame
+						Tween(flashStroke, TweenInfo.new(0.4, Enum.EasingStyle.Sine), {Transparency = 1}):Play()
+						task.delay(0.4, function() flashStroke:Destroy() end)
+					end
+					function RadioGroupFunctions:SetTooltip(Text)
+						if RadioGroupFunctions._tooltip then RadioGroupFunctions._tooltip:Destroy() end
+						RadioGroupFunctions._tooltip = AddTooltip(rgFrame, Text)
+					end
+					if Flag then
+						MacLib.Options[Flag] = RadioGroupFunctions
+					end
+					return RadioGroupFunctions
+				end
+
 				function SectionFunctions:SetVisible(State)
 					section.Visible = State
 				end
@@ -5589,6 +5775,10 @@ function MacLib:Window(Settings)
 
 			function TabFunctions:SetVisible(State)
 				tabSwitcher.Visible = State
+			end
+
+			function TabFunctions:SetOrder(n)
+				tabSwitcher.LayoutOrder = n
 			end
 
 			function TabFunctions:SetBadge(Count)
@@ -5763,6 +5953,17 @@ function MacLib:Window(Settings)
 			}
 
 			return TabFunctions
+		end
+
+		function SectionFunctions:ReorderTabs(order)
+			for newOrder, name in ipairs(order) do
+				for tabInst, info in pairs(tabs) do
+					if info.name == name then
+						tabInst.LayoutOrder = newOrder
+						break
+					end
+				end
+			end
 		end
 
 		return SectionFunctions
@@ -6049,6 +6250,7 @@ function MacLib:Window(Settings)
 				}):Play()
 			end
 		end
+		NotificationFunctions.UpdateProgress = NotificationFunctions.SetProgress
 
 		return NotificationFunctions
 	end
@@ -6456,6 +6658,66 @@ function MacLib:Window(Settings)
 	end
 	function WindowFunctions:GetScale()
 		return baseUIScale.Scale
+	end
+
+	function WindowFunctions:SetSearchBar(enable)
+		if enable then
+			if not WindowFunctions._searchBar then
+				local sb = Instance.new("Frame")
+				sb.Name = "SearchBar"
+				sb.AnchorPoint = Vector2.new(0.5, 0)
+				sb.Position = UDim2.new(0.5, 0, 0, 0)
+				sb.Size = UDim2.new(1, -20, 0, 26)
+				sb.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				sb.BackgroundTransparency = 0.95
+				sb.BorderSizePixel = 0
+				sb.ZIndex = 2
+				local sbCorner = Instance.new("UICorner")
+				sbCorner.CornerRadius = UDim.new(0, 6)
+				sbCorner.Parent = sb
+				local sbStroke = Instance.new("UIStroke")
+				sbStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+				sbStroke.Color = Color3.fromRGB(255, 255, 255)
+				sbStroke.Transparency = 0.85
+				sbStroke.Parent = sb
+				local sbInput = Instance.new("TextBox")
+				sbInput.PlaceholderText = "Search tabs..."
+				sbInput.PlaceholderColor3 = Color3.fromRGB(200, 200, 200)
+				sbInput.Text = ""
+				sbInput.FontFace = Font.new(assets.interFont)
+				sbInput.TextSize = 12
+				sbInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+				sbInput.TextTransparency = 0.2
+				sbInput.BackgroundTransparency = 1
+				sbInput.ClearTextOnFocus = false
+				sbInput.Size = UDim2.fromScale(1, 1)
+				local sbPad = Instance.new("UIPadding")
+				sbPad.PaddingLeft = UDim.new(0, 8)
+				sbPad.PaddingRight = UDim.new(0, 8)
+				sbPad.Parent = sbInput
+				sbInput.Parent = sb
+				sb.Parent = tabSwitchers
+				tabSwitchersScrollingFrame.Size = UDim2.new(1, 0, 1, -34)
+				tabSwitchersScrollingFrame.Position = UDim2.fromOffset(0, 34)
+				sbInput:GetPropertyChangedSignal("Text"):Connect(function()
+					local query = sbInput.Text:lower()
+					for tabInst, info in pairs(tabs) do
+						tabInst.Visible = query == "" or (info.name:lower():find(query, 1, true) ~= nil)
+					end
+				end)
+				WindowFunctions._searchBar = sb
+			else
+				WindowFunctions._searchBar.Visible = true
+				tabSwitchersScrollingFrame.Size = UDim2.new(1, 0, 1, -34)
+				tabSwitchersScrollingFrame.Position = UDim2.fromOffset(0, 34)
+			end
+		else
+			if WindowFunctions._searchBar then
+				WindowFunctions._searchBar.Visible = false
+				tabSwitchersScrollingFrame.Size = UDim2.fromScale(1, 1)
+				tabSwitchersScrollingFrame.Position = UDim2.new()
+			end
+		end
 	end
 
 	function WindowFunctions:GetElement(Flag)
