@@ -5622,9 +5622,9 @@ function MacLib:Window(Settings)
 						for opt, btn in pairs(buttonInstances) do
 							local active = opt == val
 							local stroke = btn:FindFirstChildOfClass("UIStroke")
-							btn.BackgroundTransparency = active and 0.85 or 0.95
-							btn.TextTransparency = active and 0.05 or 0.5
-							if stroke then stroke.Transparency = active and 0.65 or 0.9 end
+							btn.BackgroundTransparency = active and 0.75 or 0.95
+							btn.TextTransparency = active and 0 or 0.5
+							if stroke then stroke.Transparency = active and 0.5 or 0.9 end
 						end
 						if not ignoreCallback and Settings.Callback then
 							task.spawn(Settings.Callback, val)
@@ -5637,6 +5637,7 @@ function MacLib:Window(Settings)
 						btn.FontFace = Font.new(assets.interFont)
 						btn.Text = opt
 						btn.TextSize = 12
+						btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 						btn.TextTransparency = 0.5
 						btn.AutoButtonColor = false
 						btn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -5681,9 +5682,9 @@ function MacLib:Window(Settings)
 							local stroke = btn:FindFirstChildOfClass("UIStroke")
 							if State then
 								local active = opt == selected
-								btn.BackgroundTransparency = active and 0.85 or 0.95
-								btn.TextTransparency = active and 0.05 or 0.5
-								if stroke then stroke.Transparency = active and 0.65 or 0.9 end
+								btn.BackgroundTransparency = active and 0.75 or 0.95
+								btn.TextTransparency = active and 0 or 0.5
+								if stroke then stroke.Transparency = active and 0.5 or 0.9 end
 							else
 								btn.BackgroundTransparency = 0.97
 								btn.TextTransparency = 0.75
