@@ -1338,6 +1338,45 @@ function MacLib:Window(Settings)
 		return GlobalSettingFunctions
 	end
 
+	local function AddTooltip(container, text)
+		local tooltipFrame = Instance.new("Frame")
+		tooltipFrame.Name = "Tooltip"
+		tooltipFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+		tooltipFrame.BackgroundTransparency = 0
+		tooltipFrame.BorderSizePixel = 0
+		tooltipFrame.AutomaticSize = Enum.AutomaticSize.XY
+		tooltipFrame.AnchorPoint = Vector2.new(0, 1)
+		tooltipFrame.Position = UDim2.new(0, 0, 0, -6)
+		tooltipFrame.ZIndex = 100
+		tooltipFrame.Visible = false
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0, 4)
+		corner.Parent = tooltipFrame
+		local padding = Instance.new("UIPadding")
+		padding.PaddingLeft = UDim.new(0, 6)
+		padding.PaddingRight = UDim.new(0, 6)
+		padding.PaddingTop = UDim.new(0, 4)
+		padding.PaddingBottom = UDim.new(0, 4)
+		padding.Parent = tooltipFrame
+		local label = Instance.new("TextLabel")
+		label.BackgroundTransparency = 1
+		label.Text = text
+		label.TextColor3 = Color3.fromRGB(230, 230, 230)
+		label.TextSize = 12
+		label.Font = Enum.Font.GothamMedium
+		label.AutomaticSize = Enum.AutomaticSize.XY
+		label.ZIndex = 100
+		label.Parent = tooltipFrame
+		tooltipFrame.Parent = container
+		container.MouseEnter:Connect(function()
+			tooltipFrame.Visible = true
+		end)
+		container.MouseLeave:Connect(function()
+			tooltipFrame.Visible = false
+		end)
+		return tooltipFrame
+	end
+
 	function WindowFunctions:TabGroup()
 		local SectionFunctions = {}
 
@@ -1705,6 +1744,11 @@ function MacLib:Window(Settings)
 						task.delay(0.4, function() flashStroke:Destroy() end)
 					end
 
+					function ButtonFunctions:SetTooltip(Text)
+						if ButtonFunctions._tooltip then ButtonFunctions._tooltip:Destroy() end
+						ButtonFunctions._tooltip = AddTooltip(button, Text)
+					end
+
 					if Flag then
 						MacLib.Options[Flag] = ButtonFunctions
 					end
@@ -1861,6 +1905,12 @@ function MacLib:Window(Settings)
 					function ToggleFunctions:UpdateName(Name)
 						toggleName.Text = Name
 					end
+					function ToggleFunctions:UpdateDescription(Text)
+						local descLabel = toggle:FindFirstChild("ToggleDescription")
+						if descLabel then
+							descLabel.Text = Text
+						end
+					end
 					function ToggleFunctions:SetVisibility(State)
 						toggle.Visible = State
 					end
@@ -1896,6 +1946,11 @@ function MacLib:Window(Settings)
 						flashStroke.Parent = toggle
 						Tween(flashStroke, TweenInfo.new(0.4, Enum.EasingStyle.Sine), {Transparency = 1}):Play()
 						task.delay(0.4, function() flashStroke:Destroy() end)
+					end
+
+					function ToggleFunctions:SetTooltip(Text)
+						if ToggleFunctions._tooltip then ToggleFunctions._tooltip:Destroy() end
+						ToggleFunctions._tooltip = AddTooltip(toggle, Text)
 					end
 
 					if Flag then
@@ -2072,7 +2127,10 @@ function MacLib:Window(Settings)
 
 						finalValue = posXScale * (SliderFunctions.Settings.Maximum - SliderFunctions.Settings.Minimum) + Settings.Minimum
 
-						sliderValue.Text = (Settings.Prefix or "") .. ValueDisplayMethod(finalValue, SliderFunctions.Settings.Precision) .. (Settings.Suffix or "")
+								if Settings.Step then
+									finalValue = math.floor(finalValue / Settings.Step + 0.5) * Settings.Step
+									finalValue = math.clamp(finalValue, SliderFunctions.Settings.Minimum, SliderFunctions.Settings.Maximum)
+								end
 
 						if not ignorecallback then
 							task.spawn(function()
@@ -2188,6 +2246,11 @@ function MacLib:Window(Settings)
 						flashStroke.Parent = slider
 						Tween(flashStroke, TweenInfo.new(0.4, Enum.EasingStyle.Sine), {Transparency = 1}):Play()
 						task.delay(0.4, function() flashStroke:Destroy() end)
+					end
+
+					function SliderFunctions:SetTooltip(Text)
+						if SliderFunctions._tooltip then SliderFunctions._tooltip:Destroy() end
+						SliderFunctions._tooltip = AddTooltip(slider, Text)
 					end
 
 					if Flag then
@@ -2395,6 +2458,11 @@ function MacLib:Window(Settings)
 						task.delay(0.4, function() flashStroke:Destroy() end)
 					end
 
+					function InputFunctions:SetTooltip(Text)
+						if InputFunctions._tooltip then InputFunctions._tooltip:Destroy() end
+						InputFunctions._tooltip = AddTooltip(input, Text)
+					end
+
 					if Flag then
 						MacLib.Options[Flag] = InputFunctions
 					end
@@ -2482,6 +2550,7 @@ function MacLib:Window(Settings)
 					local reset = false
 					local binded = KeybindFunctions.Settings.Default
 					local keybindEnabled = true
+					local holdToggleState = false
 
 					local function resetFocusState()
 						focused = false
@@ -2532,11 +2601,23 @@ function MacLib:Window(Settings)
 							end)
 						else
 							if not reset and (inp.KeyCode == binded or inp.UserInputType == binded) then
-								if KeybindFunctions.Settings.Callback then
-									KeybindFunctions.Settings.Callback(binded)
-								end
-								if KeybindFunctions.Settings.onBindHeld then
-									KeybindFunctions.Settings.onBindHeld(true, binded)
+								local mode = KeybindFunctions.Settings.Mode
+								if mode == "Hold" then
+									if KeybindFunctions.Settings.Callback then
+										KeybindFunctions.Settings.Callback(true)
+									end
+								elseif mode == "Toggle" then
+									holdToggleState = not holdToggleState
+									if KeybindFunctions.Settings.Callback then
+										KeybindFunctions.Settings.Callback(holdToggleState)
+									end
+								else
+									if KeybindFunctions.Settings.Callback then
+										KeybindFunctions.Settings.Callback(binded)
+									end
+									if KeybindFunctions.Settings.onBindHeld then
+										KeybindFunctions.Settings.onBindHeld(true, binded)
+									end
 								end
 							else
 								reset = false
@@ -2547,8 +2628,14 @@ function MacLib:Window(Settings)
 					UserInputService.InputEnded:Connect(function(inp)
 						if not focused and not isBinding then
 							if inp.KeyCode == binded or inp.UserInputType == binded then
-								if Settings.onBindHeld then
-									Settings.onBindHeld(false, binded)
+								if KeybindFunctions.Settings.Mode == "Hold" then
+									if KeybindFunctions.Settings.Callback then
+										KeybindFunctions.Settings.Callback(false)
+									end
+								else
+									if Settings.onBindHeld then
+										Settings.onBindHeld(false, binded)
+									end
 								end
 							end
 						end
@@ -2603,6 +2690,11 @@ function MacLib:Window(Settings)
 						flashStroke.Parent = keybind
 						Tween(flashStroke, TweenInfo.new(0.4, Enum.EasingStyle.Sine), {Transparency = 1}):Play()
 						task.delay(0.4, function() flashStroke:Destroy() end)
+					end
+
+					function KeybindFunctions:SetTooltip(Text)
+						if KeybindFunctions._tooltip then KeybindFunctions._tooltip:Destroy() end
+						KeybindFunctions._tooltip = AddTooltip(keybind, Text)
 					end
 
 					if Flag then
@@ -2827,6 +2919,9 @@ function MacLib:Window(Settings)
 						if State then
 							if DropdownFunctions.Settings.Multi then
 								if not table.find(Selected, optionName) then
+									if DropdownFunctions.Settings.MaxSelections and #Selected >= DropdownFunctions.Settings.MaxSelections then
+										return
+									end
 									table.insert(Selected, optionName)
 									DropdownFunctions.Value = Selected
 								end
@@ -3193,6 +3288,11 @@ function MacLib:Window(Settings)
 					function DropdownFunctions:IsOption(optionName)
 						if not optionName then return end
 						return OptionObjs[optionName] ~= nil
+					end
+
+					function DropdownFunctions:SetTooltip(Text)
+						if DropdownFunctions._tooltip then DropdownFunctions._tooltip:Destroy() end
+						DropdownFunctions._tooltip = AddTooltip(dropdown, Text)
 					end
 
 					if Flag then
@@ -3732,8 +3832,7 @@ function MacLib:Window(Settings)
 					alpha.BorderSizePixel = 0
 					alpha.LayoutOrder = 4
 					alpha.Size = UDim2.fromOffset(0, 38)
-					alpha.Visible = isAlpha
-
+						alpha.Visible = isAlpha and not (Settings.HideAlpha == true)
 					local inputName3 = Instance.new("TextLabel")
 					inputName3.Name = "InputName"
 					inputName3.FontFace = Font.new(assets.interFont)
@@ -4512,6 +4611,11 @@ function MacLib:Window(Settings)
 						task.delay(0.4, function() flashStroke:Destroy() end)
 					end
 
+					function ColorpickerFunctions:SetTooltip(Text)
+						if ColorpickerFunctions._tooltip then ColorpickerFunctions._tooltip:Destroy() end
+						ColorpickerFunctions._tooltip = AddTooltip(colorpicker, Text)
+					end
+
 					if Flag then
 						MacLib.Options[Flag] = ColorpickerFunctions
 					end
@@ -4562,8 +4666,13 @@ function MacLib:Window(Settings)
 					function HeaderFunctions:UpdateName(New)
 						headerText.Text = New
 					end
-					function HeaderFunctions:SetVisibility(State)
-						header.Visible = State
+					function HeaderFunctions:UpdateText(New)
+						headerText.Text = New
+					end
+
+					function HeaderFunctions:SetTooltip(Text)
+						if HeaderFunctions._tooltip then HeaderFunctions._tooltip:Destroy() end
+						HeaderFunctions._tooltip = AddTooltip(header, Text)
 					end
 
 					if Flag then
@@ -5934,6 +6043,14 @@ function MacLib:Window(Settings)
 		return notifications.Visible
 	end
 
+	function WindowFunctions:ClearNotifications()
+		for _, child in ipairs(notifications:GetChildren()) do
+			if child:IsA("Frame") then
+				child:Destroy()
+			end
+		end
+	end
+
 	function WindowFunctions:SetState(State)
 		windowState = State
 		base.Visible = State
@@ -6006,6 +6123,19 @@ function MacLib:Window(Settings)
 
 	function WindowFunctions:GetAcrylicBlurState()
 		return acrylicBlur
+	end
+
+	function WindowFunctions:SetAccentColor(Color)
+		baseUIStroke.Color = Color
+		for _, tabInfo in pairs(tabs) do
+			if tabInfo.tabStroke then
+				tabInfo.tabStroke.Color = Color
+			end
+		end
+	end
+
+	function WindowFunctions:GetAccentColor()
+		return baseUIStroke.Color
 	end
 
 	local function _SetUserInfoState(State)
