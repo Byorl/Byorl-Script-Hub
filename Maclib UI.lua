@@ -2087,6 +2087,7 @@ function MacLib:Window(Settings)
 					sliderValue.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					sliderValue.BorderSizePixel = 0
 					sliderValue.LayoutOrder = 1
+					sliderValue.AutomaticSize = Enum.AutomaticSize.X
 					sliderValue.Position = UDim2.fromScale(-0.0789, 0.171)
 					sliderValue.Size = UDim2.fromOffset(41, 21)
 					sliderValue.ClipsDescendants = true
@@ -2195,7 +2196,7 @@ function MacLib:Window(Settings)
 							local input = val
 							posXScale = math.clamp((input.Position.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X, 0, 1)
 						else
-							local value = val
+							local value = val or Settings.Default or Settings.Minimum or 0
 							posXScale = (value - SliderFunctions.Settings.Minimum) / (SliderFunctions.Settings.Maximum - Settings.Minimum)
 						end
 
@@ -2204,12 +2205,22 @@ function MacLib:Window(Settings)
 
 						finalValue = posXScale * (SliderFunctions.Settings.Maximum - SliderFunctions.Settings.Minimum) + Settings.Minimum
 
-								if Settings.Step then
-									finalValue = math.floor(finalValue / Settings.Step + 0.5) * Settings.Step
-									finalValue = math.clamp(finalValue, SliderFunctions.Settings.Minimum, SliderFunctions.Settings.Maximum)
-								end
+						if Settings.Step then
+							finalValue = math.floor(finalValue / Settings.Step + 0.5) * Settings.Step
+						end
+                        
+                        if Settings.Precision then
+                            finalValue = tonumber(string.format("%." .. Settings.Precision .. "f", finalValue))
+                        elseif Settings.Step and Settings.Step % 1 ~= 0 then
+                            local decimals = string.len(tostring(Settings.Step):match("%.(%d+)") or "")
+                            finalValue = tonumber(string.format("%." .. decimals .. "f", finalValue))
+                        else
+                            finalValue = math.round(finalValue)
+                        end
 
-								sliderValue.Text = ValueDisplayMethod(finalValue, SliderFunctions.Settings.Precision) .. (SliderFunctions.Settings.Suffix or "")
+						finalValue = math.clamp(finalValue, SliderFunctions.Settings.Minimum, SliderFunctions.Settings.Maximum)
+
+						sliderValue.Text = ValueDisplayMethod(finalValue, SliderFunctions.Settings.Precision) .. (SliderFunctions.Settings.Suffix or "")
 
 						if not ignorecallback then
 							task.spawn(function()
@@ -2271,18 +2282,21 @@ function MacLib:Window(Settings)
 					end)
 
 					local function updateSliderBarSize()
-						local sliderValueWidth = sliderValue.AbsoluteSize.X
-						local sliderNameWidth = sliderName.AbsoluteSize.X
-						local totalWidth = slider.AbsoluteSize.X
+						task.defer(function()
+							local sliderValueWidth = sliderValue.AbsoluteSize.X
+							local sliderNameWidth = sliderName.AbsoluteSize.X
+							local totalWidth = slider.AbsoluteSize.X
 
-						local newBarWidth = math.max(40, (totalWidth - (sliderValueWidth + sliderNameWidth + 40)) / baseUIScale.Scale)
-						sliderBar.Size = UDim2.new(0, newBarWidth, sliderBar.Size.Y.Scale, sliderBar.Size.Y.Offset)
+							local newBarWidth = math.max(40, (totalWidth - (sliderValueWidth + sliderNameWidth + 50)) / baseUIScale.Scale)
+							sliderBar.Size = UDim2.new(0, newBarWidth, sliderBar.Size.Y.Scale, sliderBar.Size.Y.Offset)
+						end)
 					end
 
 					updateSliderBarSize()
 
+					slider:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateSliderBarSize)
 					sliderName:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateSliderBarSize)
-					section:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateSliderBarSize)
+					sliderValue:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateSliderBarSize)
 
 					function SliderFunctions:UpdateName(Name)
 						sliderName.Text = Name
@@ -5397,8 +5411,22 @@ function MacLib:Window(Settings)
 					local MultiSliderFunctions = { Settings = Settings, IgnoreConfig = false, Class = "MultiSlider" }
 					local minVal = Settings.Minimum or 0
 					local maxVal = Settings.Maximum or 100
-					local currentLow = math.clamp(Settings.DefaultLow or minVal, minVal, maxVal)
-					local currentHigh = math.clamp(Settings.DefaultHigh or maxVal, minVal, maxVal)
+
+					local function applyPrecision(val)
+						if Settings.Step then
+							val = math.floor(val / Settings.Step + 0.5) * Settings.Step
+						end
+						if Settings.Precision then
+							return tonumber(string.format("%." .. Settings.Precision .. "f", val))
+						elseif Settings.Step and Settings.Step % 1 ~= 0 then
+							local decimals = string.len(tostring(Settings.Step):match("%.(%d+)") or "")
+							return tonumber(string.format("%." .. decimals .. "f", val))
+						end
+						return math.round(val)
+					end
+
+					local currentLow = math.clamp(applyPrecision(Settings.DefaultLow or minVal), minVal, maxVal)
+					local currentHigh = math.clamp(applyPrecision(Settings.DefaultHigh or maxVal), minVal, maxVal)
 
 					local multiSlider = Instance.new("Frame")
 					multiSlider.Name = "MultiSlider"
@@ -5443,6 +5471,7 @@ function MacLib:Window(Settings)
 					msValueText.BackgroundTransparency = 0.95
 					msValueText.BorderSizePixel = 0
 					msValueText.LayoutOrder = 1
+					msValueText.AutomaticSize = Enum.AutomaticSize.X
 					msValueText.Size = UDim2.fromOffset(70, 21)
 					msValueText.ClipsDescendants = true
 
@@ -5521,8 +5550,16 @@ function MacLib:Window(Settings)
 					local function PosToValue(posX)
 						local scale = math.clamp((posX - msBar.AbsolutePosition.X) / msBar.AbsoluteSize.X, 0, 1)
 						local raw = scale * (maxVal - minVal) + minVal
+						
+						if Settings.Step then
+							raw = math.floor(raw / Settings.Step + 0.5) * Settings.Step
+						end
+
 						if Settings.Precision then
 							return tonumber(string.format("%." .. Settings.Precision .. "f", raw))
+						elseif Settings.Step and Settings.Step % 1 ~= 0 then
+							local decimals = string.len(tostring(Settings.Step):match("%.(%d+)") or "")
+							return tonumber(string.format("%." .. decimals .. "f", raw))
 						end
 						return math.round(raw)
 					end
@@ -5580,16 +5617,19 @@ function MacLib:Window(Settings)
 					end)
 
 					local function updateMSBarSize()
-						local valueWidth = msValueText.AbsoluteSize.X
-						local nameWidth = multiSliderName.AbsoluteSize.X
-						local totalWidth = multiSlider.AbsoluteSize.X
-						local newBarWidth = math.max(40, (totalWidth - (valueWidth + nameWidth + 40)) / baseUIScale.Scale)
-						msBar.Size = UDim2.new(0, newBarWidth, msBar.Size.Y.Scale, msBar.Size.Y.Offset)
+						task.defer(function()
+							local valueWidth = msValueText.AbsoluteSize.X
+							local nameWidth = multiSliderName.AbsoluteSize.X
+							local totalWidth = multiSlider.AbsoluteSize.X
+							local newBarWidth = math.max(40, (totalWidth - (valueWidth + nameWidth + 50)) / baseUIScale.Scale)
+							msBar.Size = UDim2.new(0, newBarWidth, msBar.Size.Y.Scale, msBar.Size.Y.Offset)
+						end)
 					end
 
 					updateMSBarSize()
+					multiSlider:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateMSBarSize)
 					multiSliderName:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateMSBarSize)
-					section:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateMSBarSize)
+					msValueText:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateMSBarSize)
 
 					function MultiSliderFunctions:UpdateName(Name)
 						multiSliderName.Text = Name
