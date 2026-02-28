@@ -1892,6 +1892,28 @@ function MacLib:Window(Settings)
 
 					toggle1.MouseButton1Click:Connect(Toggle)
 
+					function ToggleFunctions:AddGear(Callback)
+						local gearBtn = Instance.new("ImageButton")
+						gearBtn.Name = "GearButton"
+						gearBtn.Image = "rbxassetid://10734950309"
+						gearBtn.Size = UDim2.fromOffset(24, 24)
+						gearBtn.Position = UDim2.new(1, -65, 0.5, 0)
+						gearBtn.AnchorPoint = Vector2.new(1, 0.5)
+						gearBtn.BackgroundTransparency = 1
+						gearBtn.ImageTransparency = 0.5
+						gearBtn.ZIndex = 3
+						gearBtn.Parent = toggle
+						
+						gearBtn.MouseEnter:Connect(function()
+							Tween(gearBtn, TweenInfo.new(0.3), {ImageTransparency = 0}):Play()
+						end)
+						gearBtn.MouseLeave:Connect(function()
+							Tween(gearBtn, TweenInfo.new(0.3), {ImageTransparency = 0.5}):Play()
+						end)
+						gearBtn.MouseButton1Click:Connect(Callback)
+						return gearBtn
+					end
+
 					function ToggleFunctions:Toggle()
 						Toggle()
 					end
