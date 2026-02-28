@@ -110,7 +110,17 @@ function MacLib:Window(Settings)
 	base.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	base.BorderSizePixel = 0
 	base.Position = UDim2.fromScale(0.5, 0.5)
-	base.Size = Settings.Size or UDim2.fromOffset(868, 650)
+	
+	local uiSize = Settings.Size or UDim2.fromOffset(868, 650)
+	local isMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+
+	if Settings.AutoAdjustSize then
+		if isMobile then
+			uiSize = UDim2.fromOffset(500, 320)
+		end
+	end
+
+	base.Size = uiSize
 
 	local baseUIScale = Instance.new("UIScale")
 	baseUIScale.Name = "BaseUIScale"
@@ -7129,6 +7139,7 @@ function MacLib:Demo()
 		Title = "Maclib Demo",
 		Subtitle = "This is a subtitle.",
 		Size = UDim2.fromOffset(868, 650),
+		AutoAdjustSize = true,
 		DragStyle = 1,
 		DisabledWindowControls = {},
 		ShowUserInfo = true,
