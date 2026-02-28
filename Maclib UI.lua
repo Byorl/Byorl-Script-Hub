@@ -2261,13 +2261,12 @@ function MacLib:Window(Settings)
 					end)
 
 					local function updateSliderBarSize()
-						local padding = sliderElementsUIListLayout.Padding.Offset
 						local sliderValueWidth = sliderValue.AbsoluteSize.X
 						local sliderNameWidth = sliderName.AbsoluteSize.X
-						local totalWidth = sliderElements.AbsoluteSize.X
+						local totalWidth = slider.AbsoluteSize.X
 
-						local newBarWidth = math.max(40, (totalWidth - (padding + sliderValueWidth + sliderNameWidth + 20)) / baseUIScale.Scale)
-						sliderBar.Size = UDim2.new(sliderBar.Size.X.Scale, newBarWidth, sliderBar.Size.Y.Scale, sliderBar.Size.Y.Offset)
+						local newBarWidth = math.max(40, (totalWidth - (sliderValueWidth + sliderNameWidth + 40)) / baseUIScale.Scale)
+						sliderBar.Size = UDim2.new(0, newBarWidth, sliderBar.Size.Y.Scale, sliderBar.Size.Y.Offset)
 					end
 
 					updateSliderBarSize()
@@ -5571,12 +5570,11 @@ function MacLib:Window(Settings)
 					end)
 
 					local function updateMSBarSize()
-						local padding = msElementsUIListLayout.Padding.Offset
 						local valueWidth = msValueText.AbsoluteSize.X
 						local nameWidth = multiSliderName.AbsoluteSize.X
-						local totalWidth = msElements.AbsoluteSize.X
-						local newBarWidth = math.max(40, (totalWidth - (padding + valueWidth + nameWidth + 20)) / baseUIScale.Scale)
-						msBar.Size = UDim2.new(msBar.Size.X.Scale, newBarWidth, msBar.Size.Y.Scale, msBar.Size.Y.Offset)
+						local totalWidth = multiSlider.AbsoluteSize.X
+						local newBarWidth = math.max(40, (totalWidth - (valueWidth + nameWidth + 40)) / baseUIScale.Scale)
+						msBar.Size = UDim2.new(0, newBarWidth, msBar.Size.Y.Scale, msBar.Size.Y.Offset)
 					end
 
 					updateMSBarSize()
