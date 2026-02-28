@@ -2283,12 +2283,44 @@ function MacLib:Window(Settings)
 
 					local function updateSliderBarSize()
 						task.defer(function()
-							local sliderValueWidth = sliderValue.AbsoluteSize.X
-							local sliderNameWidth = sliderName.AbsoluteSize.X
+							local sliderValueWidth = math.max(sliderValue.Size.X.Offset, sliderValue.TextBounds.X)
+							local sliderNameWidth = sliderName.TextBounds.X
 							local totalWidth = slider.AbsoluteSize.X
 
-							local newBarWidth = math.max(40, (totalWidth - (sliderValueWidth + sliderNameWidth + 50)) / baseUIScale.Scale)
-							sliderBar.Size = UDim2.new(0, newBarWidth, sliderBar.Size.Y.Scale, sliderBar.Size.Y.Offset)
+							if totalWidth <= 0 then return end
+							local nameOffsetX = (SliderFunctions._icon and 22) or 0
+
+							if (sliderNameWidth + sliderValueWidth + nameOffsetX + 90) > totalWidth then
+								slider.Size = UDim2.new(1, 0, 0, 58)
+								sliderName.AnchorPoint = Vector2.new(0, 0)
+								sliderName.Position = UDim2.new(0, nameOffsetX, 0, 6)
+								
+								if SliderFunctions._icon then
+									SliderFunctions._icon.AnchorPoint = Vector2.new(0, 0)
+									SliderFunctions._icon.Position = UDim2.new(0, 0, 0, 6)
+								end
+								
+								sliderElements.Size = UDim2.new(1, 0, 0, 34)
+								sliderElements.Position = UDim2.new(1, 0, 0, 24)
+								
+								local newBarWidth = math.max(40, (totalWidth - (sliderValueWidth + 30)) / baseUIScale.Scale)
+								sliderBar.Size = UDim2.new(0, newBarWidth, sliderBar.Size.Y.Scale, sliderBar.Size.Y.Offset)
+							else
+								slider.Size = UDim2.new(1, 0, 0, 38)
+								sliderName.AnchorPoint = Vector2.new(0, 0.5)
+								sliderName.Position = UDim2.new(0, nameOffsetX, 0.5, 0)
+								
+								if SliderFunctions._icon then
+									SliderFunctions._icon.AnchorPoint = Vector2.new(0, 0.5)
+									SliderFunctions._icon.Position = UDim2.new(0, 0, 0.5, 0)
+								end
+								
+								sliderElements.Size = UDim2.new(1, 0, 1, 0)
+								sliderElements.Position = UDim2.new(1, 0, 0, 0)
+								
+								local newBarWidth = math.max(40, (totalWidth - (sliderValueWidth + sliderNameWidth + nameOffsetX + 50)) / baseUIScale.Scale)
+								sliderBar.Size = UDim2.new(0, newBarWidth, sliderBar.Size.Y.Scale, sliderBar.Size.Y.Offset)
+							end
 						end)
 					end
 
@@ -2326,7 +2358,8 @@ function MacLib:Window(Settings)
 							SliderFunctions._icon.Size = UDim2.fromOffset(16, 16)
 							SliderFunctions._icon.ImageTransparency = 0.4
 							SliderFunctions._icon.Parent = slider
-							sliderName.Position = UDim2.new(0, 22, 0.5, 0)
+							
+							updateSliderBarSize()
 						end
 						SliderFunctions._icon.Image = Image
 					end
@@ -5618,11 +5651,44 @@ function MacLib:Window(Settings)
 
 					local function updateMSBarSize()
 						task.defer(function()
-							local valueWidth = msValueText.AbsoluteSize.X
-							local nameWidth = multiSliderName.AbsoluteSize.X
+							local valueWidth = math.max(msValueText.Size.X.Offset, msValueText.TextBounds.X)
+							local nameWidth = multiSliderName.TextBounds.X
 							local totalWidth = multiSlider.AbsoluteSize.X
-							local newBarWidth = math.max(40, (totalWidth - (valueWidth + nameWidth + 50)) / baseUIScale.Scale)
-							msBar.Size = UDim2.new(0, newBarWidth, msBar.Size.Y.Scale, msBar.Size.Y.Offset)
+							
+							if totalWidth <= 0 then return end
+							local nameOffsetX = (MultiSliderFunctions._icon and 22) or 0
+							
+							if (nameWidth + valueWidth + nameOffsetX + 90) > totalWidth then
+								multiSlider.Size = UDim2.new(1, 0, 0, 58)
+								multiSliderName.AnchorPoint = Vector2.new(0, 0)
+								multiSliderName.Position = UDim2.new(0, nameOffsetX, 0, 6)
+								
+								if MultiSliderFunctions._icon then
+									MultiSliderFunctions._icon.AnchorPoint = Vector2.new(0, 0)
+									MultiSliderFunctions._icon.Position = UDim2.new(0, 0, 0, 6)
+								end
+								
+								msElements.Size = UDim2.new(1, 0, 0, 34)
+								msElements.Position = UDim2.new(1, 0, 0, 24)
+								
+								local newBarWidth = math.max(40, (totalWidth - (valueWidth + 30)) / baseUIScale.Scale)
+								msBar.Size = UDim2.new(0, newBarWidth, msBar.Size.Y.Scale, msBar.Size.Y.Offset)
+							else
+								multiSlider.Size = UDim2.new(1, 0, 0, 38)
+								multiSliderName.AnchorPoint = Vector2.new(0, 0.5)
+								multiSliderName.Position = UDim2.new(0, nameOffsetX, 0.5, 0)
+								
+								if MultiSliderFunctions._icon then
+									MultiSliderFunctions._icon.AnchorPoint = Vector2.new(0, 0.5)
+									MultiSliderFunctions._icon.Position = UDim2.new(0, 0, 0.5, 0)
+								end
+								
+								msElements.Size = UDim2.new(1, 0, 1, 0)
+								msElements.Position = UDim2.new(1, 0, 0, 0)
+								
+								local newBarWidth = math.max(40, (totalWidth - (valueWidth + nameWidth + nameOffsetX + 50)) / baseUIScale.Scale)
+								msBar.Size = UDim2.new(0, newBarWidth, msBar.Size.Y.Scale, msBar.Size.Y.Offset)
+							end
 						end)
 					end
 
@@ -5662,7 +5728,8 @@ function MacLib:Window(Settings)
 							MultiSliderFunctions._icon.Size = UDim2.fromOffset(16, 16)
 							MultiSliderFunctions._icon.ImageTransparency = 0.4
 							MultiSliderFunctions._icon.Parent = multiSlider
-							multiSliderName.Position = UDim2.new(0, 22, 0.5, 0)
+							
+							updateMSBarSize()
 						end
 						MultiSliderFunctions._icon.Image = Image
 					end
