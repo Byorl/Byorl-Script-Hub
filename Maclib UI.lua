@@ -1248,7 +1248,7 @@ function MacLib:Window(Settings)
 			Enum.FontWeight.Medium,
 			Enum.FontStyle.Normal
 		)
-		checkmark.Text = "âœ“"
+		checkmark.Text = "\226\156\147"
 		checkmark.TextColor3 = Color3.fromRGB(255, 255, 255)
 		checkmark.TextSize = 13
 		checkmark.TextTransparency = 1
@@ -1365,6 +1365,10 @@ function MacLib:Window(Settings)
 		label.TextSize = 12
 		label.Font = Enum.Font.GothamMedium
 		label.AutomaticSize = Enum.AutomaticSize.XY
+		label.TextWrapped = true
+		local labelSize = Instance.new("UISizeConstraint")
+		labelSize.MaxSize = Vector2.new(300, 9999)
+		labelSize.Parent = label
 		label.ZIndex = 100
 		label.Parent = tooltipFrame
 		tooltipFrame.Parent = container
@@ -1894,7 +1898,10 @@ function MacLib:Window(Settings)
 					toggle1.MouseButton1Click:Connect(Toggle)
 
 					function ToggleFunctions:AddGear(Callback)
-                                                local gearBtn = Instance.new("ImageButton")
+                                                if toggleName then toggleName.Size = UDim2.new(1, -95, 0, 0) end
+						local descLabel = toggle:FindFirstChild("ToggleDescription")
+						if descLabel then descLabel.Size = UDim2.new(1, -95, 0, 0) end
+						local gearBtn = Instance.new("ImageButton")
                                                 gearBtn.Name = "GearButton"
                                                 gearBtn.Image = "rbxassetid://10734950309"
                                                 gearBtn.Size = UDim2.fromOffset(24, 24)
@@ -2093,6 +2100,7 @@ function MacLib:Window(Settings)
 					sliderValueUIPadding.Parent = sliderValue
 
 					sliderValue.Parent = sliderElements
+					sliderValue.Text = tostring(math.round(currentValue * 10^precision) / 10^precision) .. (Settings.Suffix or "")
 
 					local sliderElementsUIListLayout = Instance.new("UIListLayout")
 					sliderElementsUIListLayout.Name = "SliderElementsUIListLayout"
@@ -2154,7 +2162,7 @@ function MacLib:Window(Settings)
 						end,
 						Degrees = function(sliderValue, precision)
 							local formattedValue = precision and string.format("%." .. precision .. "f", sliderValue) or tostring(sliderValue)
-							return formattedValue .. "Â°"
+							return formattedValue .. "\194\176"
 						end,
 						Percent = function(sliderValue, precision)
 							local percentage = (sliderValue - SliderFunctions.Settings.Minimum) / (SliderFunctions.Settings.Maximum - SliderFunctions.Settings.Minimum) * 100
@@ -2254,7 +2262,7 @@ function MacLib:Window(Settings)
 						local sliderNameWidth = sliderName.AbsoluteSize.X
 						local totalWidth = sliderElements.AbsoluteSize.X
 
-						local newBarWidth = (totalWidth - (padding + sliderValueWidth + sliderNameWidth + 20)) / baseUIScale.Scale
+						local newBarWidth = math.max(40, (totalWidth - (padding + sliderValueWidth + sliderNameWidth + 20)) / baseUIScale.Scale)
 						sliderBar.Size = UDim2.new(sliderBar.Size.X.Scale, newBarWidth, sliderBar.Size.Y.Scale, sliderBar.Size.Y.Offset)
 					end
 
@@ -3012,7 +3020,7 @@ function MacLib:Window(Settings)
 					local dropdownName = Instance.new("TextLabel")
 					dropdownName.Name = "DropdownName"
 					dropdownName.FontFace = Font.new(assets.interFont)
-					dropdownName.Text = Settings.Default and (DropdownFunctions.Settings.Name .. " â€¢ " .. table.concat(Selected, ", ")) or (DropdownFunctions.Settings.Name .. "...")
+					dropdownName.Text = Settings.Default and (DropdownFunctions.Settings.Name .. " \\226\\128\\162 " .. table.concat(Selected, ", ")) or (DropdownFunctions.Settings.Name .. "...")
 					dropdownName.RichText = true
 					dropdownName.TextColor3 = Color3.fromRGB(255, 255, 255)
 					dropdownName.TextSize = 13
@@ -3241,7 +3249,7 @@ function MacLib:Window(Settings)
 						end
 
 						if #Selected > 0 then
-							dropdownName.Text = DropdownFunctions.Settings.Name .. " â€¢ " .. table.concat(Selected, ", ")
+							dropdownName.Text = DropdownFunctions.Settings.Name .. " \\226\\128\\162 " .. table.concat(Selected, ", ")
 						else
 							dropdownName.Text = DropdownFunctions.Settings.Name .. "..."
 						end
@@ -3337,7 +3345,7 @@ function MacLib:Window(Settings)
 						local checkmark = Instance.new("TextLabel")
 						checkmark.Name = "Checkmark"
 						checkmark.FontFace = Font.new(assets.interFont)
-						checkmark.Text = "âœ“"
+						checkmark.Text = "\226\156\147"
 						checkmark.TextColor3 = Color3.fromRGB(255, 255, 255)
 						checkmark.TextSize = 13
 						checkmark.TextTransparency = 1
@@ -5563,7 +5571,7 @@ function MacLib:Window(Settings)
 						local valueWidth = msValueText.AbsoluteSize.X
 						local nameWidth = multiSliderName.AbsoluteSize.X
 						local totalWidth = msElements.AbsoluteSize.X
-						local newBarWidth = (totalWidth - (padding + valueWidth + nameWidth + 20)) / baseUIScale.Scale
+						local newBarWidth = math.max(40, (totalWidth - (padding + valueWidth + nameWidth + 20)) / baseUIScale.Scale)
 						msBar.Size = UDim2.new(msBar.Size.X.Scale, newBarWidth, msBar.Size.Y.Scale, msBar.Size.Y.Offset)
 					end
 
@@ -6163,7 +6171,7 @@ function MacLib:Window(Settings)
 		local interactable = Instance.new("TextButton")
 		interactable.Name = "Interactable"
 		interactable.FontFace = Font.new(assets.interFont)
-		interactable.Text = "âœ“"
+		interactable.Text = "\226\156\147"
 		interactable.TextColor3 = Color3.fromRGB(255, 255, 255)
 		interactable.TextSize = 17
 		interactable.TextTransparency = 0.2
@@ -6210,8 +6218,8 @@ function MacLib:Window(Settings)
 
 		local styles = {
 			None = function() interactable:Destroy() end,
-			Confirm = function() interactable.Text = "âœ“" end,
-			Cancel = function() interactable.Text = "âœ—" end
+			Confirm = function() interactable.Text = "\226\156\147" end,
+			Cancel = function() interactable.Text = "\226\156\151" end
 		}
 
 		local style = styles[Settings.Style] or function() interactable:Destroy() end
@@ -6749,7 +6757,7 @@ function MacLib:Window(Settings)
 				sbStroke.Transparency = 0.85
 				sbStroke.Parent = sb
 				local sbInput = Instance.new("TextBox")
-				sbInput.PlaceholderText = "Search tabs..."
+				sbInput.PlaceholderText = "Search feature..."
 				sbInput.PlaceholderColor3 = Color3.fromRGB(200, 200, 200)
 				sbInput.Text = ""
 				sbInput.FontFace = Font.new(assets.interFont)
@@ -6784,9 +6792,18 @@ function MacLib:Window(Settings)
 							end
 						end
 						tabInst.Visible = match
-					end
-				end)
-				WindowFunctions._searchBar = sb
+									end
+									for _, child in ipairs(tabSwitchersScrollingFrame:GetChildren()) do
+										if child.Name == "Section" and child:FindFirstChild("SectionTabSwitchers") then
+											local hasVisible = false
+											for _, btn in ipairs(child.SectionTabSwitchers:GetChildren()) do
+												if btn:IsA("TextButton") and btn.Visible then hasVisible = true; break end
+											end
+											child.Visible = hasVisible
+										end
+									end
+							end)
+							WindowFunctions._searchBar = sb
 			else
 				WindowFunctions._searchBar.Visible = true
 				tabSwitchersScrollingFrame.Size = UDim2.new(1, 0, 1, -34)
