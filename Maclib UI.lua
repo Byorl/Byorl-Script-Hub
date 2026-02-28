@@ -1597,6 +1597,7 @@ function MacLib:Window(Settings)
 			elementsScrolling.Parent = elements1
 
 			function TabFunctions:Section(Settings)
+				if Settings.CustomParent then right = Settings.CustomParent; left = Settings.CustomParent; end
 				local SectionFunctions = {}
 				local section = Instance.new("Frame")
 				section.Name = "Section"
@@ -6567,7 +6568,8 @@ function MacLib:Window(Settings)
 		function DialogFunctions:Cancel()
 				dialogOut()
 			end
-			DialogFunctions.PromptFrame = prompt\n\t\t\tDialogFunctions.Interactions = interactions
+			DialogFunctions.PromptFrame = prompt
+			DialogFunctions.Interactions = interactions
 			return DialogFunctions
 	end
 
@@ -7334,3 +7336,8 @@ function MacLib:Demo()
 end
 
 return MacLib
+
+
+
+
+
