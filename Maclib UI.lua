@@ -1738,6 +1738,12 @@ function MacLib:Window(Settings)
 					function ButtonFunctions:UpdateName(Name)
 						buttonInteract.Text = Name
 					end
+					function ButtonFunctions:SetText(Text)
+						ButtonFunctions:UpdateName(Text)
+					end
+					function ButtonFunctions:SetCallback(Func)
+						ButtonFunctions.Settings.Callback = Func
+					end
 					function ButtonFunctions:SetVisibility(State)
 						button.Visible = State
 					end
@@ -1973,11 +1979,20 @@ function MacLib:Window(Settings)
 						togglebool = State
 						NewState(togglebool, ToggleFunctions.Settings.Callback)
 					end
+					function ToggleFunctions:SetValue(State)
+						ToggleFunctions:UpdateState(State)
+					end
 					function ToggleFunctions:GetState()
 						return togglebool
 					end
+					function ToggleFunctions:GetValue()
+						return ToggleFunctions:GetState()
+					end
 					function ToggleFunctions:UpdateName(Name)
 						toggleName.Text = Name
+					end
+					function ToggleFunctions:SetText(Name)
+						ToggleFunctions:UpdateName(Name)
 					end
 					function ToggleFunctions:UpdateDescription(Text)
 						local descLabel = toggle:FindFirstChild("ToggleDescription")
@@ -2333,6 +2348,9 @@ function MacLib:Window(Settings)
 					function SliderFunctions:UpdateName(Name)
 						sliderName.Text = Name
 					end
+					function SliderFunctions:SetText(Name)
+						SliderFunctions:UpdateName(Name)
+					end
 					function SliderFunctions:SetVisibility(State)
 						slider.Visible = State
 					end
@@ -2344,6 +2362,16 @@ function MacLib:Window(Settings)
 					end
 					function SliderFunctions:UpdateValue(Value)
 						SetValue(tonumber(Value), true)
+					end
+					function SliderFunctions:SetValue(Value)
+						SliderFunctions:UpdateValue(Value)
+					end
+					function SliderFunctions:SetBounds(Minimum, Maximum)
+						SliderFunctions.Settings.Minimum = Minimum or 0
+						SliderFunctions.Settings.Maximum = Maximum or 100
+						local currentVal = SliderFunctions:GetValue() or SliderFunctions.Settings.Minimum
+						local newVal = math.clamp(currentVal, SliderFunctions.Settings.Minimum, SliderFunctions.Settings.Maximum)
+						SliderFunctions:UpdateValue(newVal)
 					end
 					function SliderFunctions:GetValue()
 						return finalValue
@@ -2744,6 +2772,15 @@ function MacLib:Window(Settings)
 							end
 						end)
 					end
+					function InputFunctions:SetText(Text)
+						InputFunctions:UpdateText(Text)
+					end
+					function InputFunctions:SetValue(Text)
+						InputFunctions:UpdateText(Text)
+					end
+					function InputFunctions:GetValue()
+						return InputFunctions:GetInput()
+					end
 					function InputFunctions:SetIcon(Image)
 						if not InputFunctions._icon then
 							InputFunctions._icon = Instance.new("ImageLabel")
@@ -2995,7 +3032,11 @@ function MacLib:Window(Settings)
 					end
 
 					function KeybindFunctions:UpdateName(Name)
-						keybindName = Name
+						keybindName.Text = Name
+					end
+
+					function KeybindFunctions:SetText(Name)
+						KeybindFunctions:UpdateName(Name)
 					end
 
 					function KeybindFunctions:SetVisibility(State)
@@ -3510,6 +3551,9 @@ function MacLib:Window(Settings)
 					function DropdownFunctions:UpdateName(New)
 						dropdownName.Text = New
 					end
+					function DropdownFunctions:SetText(New)
+						DropdownFunctions:UpdateName(New)
+					end
 					function DropdownFunctions:SetVisibility(State)
 						dropdown.Visible = State
 					end
@@ -3526,6 +3570,9 @@ function MacLib:Window(Settings)
 						flashStroke.Parent = dropdown
 						Tween(flashStroke, TweenInfo.new(0.4, Enum.EasingStyle.Sine), {Transparency = 1}):Play()
 						task.delay(0.4, function() flashStroke:Destroy() end)
+					end
+					function DropdownFunctions:SetValue(val)
+						DropdownFunctions:UpdateSelection(val)
 					end
 					function DropdownFunctions:UpdateSelection(newSelection)
 						if not newSelection then return end
@@ -3590,6 +3637,10 @@ function MacLib:Window(Settings)
 						if dropped then
 							dropdown.Size = UDim2.new(1, 0, 0, CalculateDropdownSize())
 						end
+					end
+					function DropdownFunctions:SetOptions(newOptions)
+						DropdownFunctions:ClearOptions()
+						DropdownFunctions:InsertOptions(newOptions)
 					end
 					function DropdownFunctions:GetOptions()
 						local optionsStatus = {}
@@ -5064,6 +5115,9 @@ function MacLib:Window(Settings)
 					function LabelFunctions:UpdateName(New)
 						labelText.Text = New
 					end
+					function LabelFunctions:SetText(Text)
+						LabelFunctions:UpdateName(Text)
+					end
 					function LabelFunctions:SetVisibility(State)
 						label.Visible = State
 					end
@@ -5113,6 +5167,9 @@ function MacLib:Window(Settings)
 
 					function SubLabelFunctions:UpdateName(New)
 						subLabelText.Text = New
+					end
+					function SubLabelFunctions:SetText(Text)
+						SubLabelFunctions:UpdateName(Text)
 					end
 					function SubLabelFunctions:SetVisibility(State)
 						subLabel.Visible = State
@@ -5193,8 +5250,14 @@ function MacLib:Window(Settings)
 					function ParagraphFunctions:UpdateHeader(New)
 						paragraphHeader.Text = New
 					end
+					function ParagraphFunctions:SetHeader(New)
+						ParagraphFunctions:UpdateHeader(New)
+					end
 					function ParagraphFunctions:UpdateBody(New)
 						paragraphBody.Text = New
+					end
+					function ParagraphFunctions:SetBody(New)
+						ParagraphFunctions:UpdateBody(New)
 					end
 					function ParagraphFunctions:SetVisibility(State)
 						paragraph.Visible = State
@@ -5715,6 +5778,15 @@ function MacLib:Window(Settings)
 						currentHigh = math.clamp(tonumber(high) or currentHigh, currentLow, maxVal)
 						UpdateVisuals()
 					end
+					function MultiSliderFunctions:SetBounds(min, max)
+						minVal = min or 0
+						maxVal = max or 100
+						Settings.Minimum = minVal
+						Settings.Maximum = maxVal
+						currentLow = math.clamp(currentLow, minVal, maxVal)
+						currentHigh = math.clamp(currentHigh, currentLow, maxVal)
+						UpdateVisuals()
+					end
 					function MultiSliderFunctions:GetValue()
 						return currentLow, currentHigh
 					end
@@ -5807,6 +5879,7 @@ function MacLib:Window(Settings)
 					rgButtons.Parent = rgFrame
 
 					local buttonInstances = {}
+					local rgTotal = 0
 
 					local function SetSelected(val, ignoreCallback)
 						selected = val
@@ -5823,11 +5896,12 @@ function MacLib:Window(Settings)
 						end
 					end
 
-					for i, opt in ipairs(Settings.Options) do
+					local function createBtn(optStr)
+						if buttonInstances[optStr] then return end
 						local btn = Instance.new("TextButton")
-						btn.Name = opt
+						btn.Name = optStr
 						btn.FontFace = Font.new(assets.interFont)
-						btn.Text = opt
+						btn.Text = optStr
 						btn.TextSize = 12
 						btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 						btn.TextTransparency = 0.5
@@ -5838,7 +5912,8 @@ function MacLib:Window(Settings)
 						btn.BorderSizePixel = 0
 						btn.AutomaticSize = Enum.AutomaticSize.X
 						btn.Size = UDim2.fromOffset(0, 21)
-						btn.LayoutOrder = i
+						rgTotal = rgTotal + 1
+						btn.LayoutOrder = rgTotal
 						local btnCorner = Instance.new("UICorner")
 						btnCorner.CornerRadius = UDim.new(0, 4)
 						btnCorner.Parent = btn
@@ -5853,10 +5928,14 @@ function MacLib:Window(Settings)
 						btnPad.Parent = btn
 						btn.MouseButton1Click:Connect(function()
 							if not rgEnabled then return end
-							SetSelected(opt)
+							SetSelected(optStr)
 						end)
-						buttonInstances[opt] = btn
+						buttonInstances[optStr] = btn
 						btn.Parent = rgButtons
+					end
+
+					for i, opt in ipairs(Settings.Options) do
+						createBtn(opt)
 					end
 
 					local function updateRGLayout()
@@ -5888,6 +5967,25 @@ function MacLib:Window(Settings)
 
 					function RadioGroupFunctions:UpdateName(Name)
 						rgName.Text = Name
+					end
+					function RadioGroupFunctions:ClearOptions()
+						for opt, btn in pairs(buttonInstances) do
+							btn:Destroy()
+						end
+						table.clear(buttonInstances)
+						rgTotal = 0
+						selected = nil
+						RadioGroupFunctions.Value = nil
+					end
+					function RadioGroupFunctions:InsertOptions(Table)
+						if not Table then return end
+						for _, opt in ipairs(Table) do
+							createBtn(opt)
+						end
+					end
+					function RadioGroupFunctions:SetOptions(Table)
+						RadioGroupFunctions:ClearOptions()
+						RadioGroupFunctions:InsertOptions(Table)
 					end
 					function RadioGroupFunctions:SetVisibility(State)
 						rgFrame.Visible = State
