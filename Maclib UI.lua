@@ -2199,6 +2199,8 @@ function MacLib:Window(Settings)
 									finalValue = math.clamp(finalValue, SliderFunctions.Settings.Minimum, SliderFunctions.Settings.Maximum)
 								end
 
+								sliderValue.Text = ValueDisplayMethod(finalValue, SliderFunctions.Settings.Precision) .. (SliderFunctions.Settings.Suffix or "")
+
 						if not ignorecallback then
 							task.spawn(function()
 								if SliderFunctions.Settings.Callback then
@@ -2244,7 +2246,7 @@ function MacLib:Window(Settings)
 							local newValue = math.clamp(value, SliderFunctions.Settings.Minimum, SliderFunctions.Settings.Maximum)
 							SetValue(newValue)
 						else
-							sliderValue.Text = ValueDisplayMethod(sliderValue)
+							sliderValue.Text = ValueDisplayMethod(finalValue, SliderFunctions.Settings.Precision) .. (SliderFunctions.Settings.Suffix or "")
 						end
 
 						if SliderFunctions.Settings.onInputComplete then
@@ -3022,7 +3024,7 @@ function MacLib:Window(Settings)
 					local dropdownName = Instance.new("TextLabel")
 					dropdownName.Name = "DropdownName"
 					dropdownName.FontFace = Font.new(assets.interFont)
-					dropdownName.Text = Settings.Default and (DropdownFunctions.Settings.Name .. " \\226\\128\\162 " .. table.concat(Selected, ", ")) or (DropdownFunctions.Settings.Name .. "...")
+					dropdownName.Text = Settings.Default and (DropdownFunctions.Settings.Name .. " - " .. table.concat(Selected, ", ")) or (DropdownFunctions.Settings.Name .. "...")
 					dropdownName.RichText = true
 					dropdownName.TextColor3 = Color3.fromRGB(255, 255, 255)
 					dropdownName.TextSize = 13
@@ -3251,7 +3253,7 @@ function MacLib:Window(Settings)
 						end
 
 						if #Selected > 0 then
-							dropdownName.Text = DropdownFunctions.Settings.Name .. " \\226\\128\\162 " .. table.concat(Selected, ", ")
+							dropdownName.Text = DropdownFunctions.Settings.Name .. " - " .. table.concat(Selected, ", ")
 						else
 							dropdownName.Text = DropdownFunctions.Settings.Name .. "..."
 						end
@@ -5523,7 +5525,7 @@ function MacLib:Window(Settings)
 						msHeadHigh.Position = UDim2.new(highScale, 0, 0.5, 0)
 						msRangeFill.Position = UDim2.fromScale(lowScale, 0)
 						msRangeFill.Size = UDim2.fromScale(highScale - lowScale, 1)
-						msValueText.Text = tostring(currentLow) .. " \xe2\x80\x93 " .. tostring(currentHigh)
+						msValueText.Text = tostring(currentLow) .. " - " .. tostring(currentHigh)
 						MultiSliderFunctions.Value = { currentLow, currentHigh }
 					end
 
@@ -5741,6 +5743,31 @@ function MacLib:Window(Settings)
 						buttonInstances[opt] = btn
 						btn.Parent = rgButtons
 					end
+
+					local function updateRGLayout()
+						local btnWidth = rgButtons.AbsoluteSize.X
+						local nameWidth = rgName.AbsoluteSize.X
+						local totalWidth = rgFrame.AbsoluteSize.X
+						
+						if totalWidth > 0 and (nameWidth + btnWidth + 20) > totalWidth then
+							rgName.AnchorPoint = Vector2.new(0, 0)
+							rgName.Position = UDim2.fromOffset(0, 5)
+							rgButtons.AnchorPoint = Vector2.new(0, 0)
+							rgButtons.Position = UDim2.fromOffset(0, 24)
+							rgFrame.Size = UDim2.new(1, 0, 0, 52)
+						else
+							rgName.AnchorPoint = Vector2.new(0, 0.5)
+							rgName.Position = UDim2.fromScale(0, 0.5)
+							rgButtons.AnchorPoint = Vector2.new(1, 0.5)
+							rgButtons.Position = UDim2.fromScale(1, 0.5)
+							rgFrame.Size = UDim2.new(1, 0, 0, 38)
+						end
+					end
+					
+					rgButtons:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateRGLayout)
+					rgName:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateRGLayout)
+					rgFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateRGLayout)
+					task.spawn(updateRGLayout)
 
 					SetSelected(selected, true)
 
