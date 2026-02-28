@@ -2100,6 +2100,8 @@ function MacLib:Window(Settings)
 					sliderValueUIPadding.Parent = sliderValue
 
 					sliderValue.Parent = sliderElements
+					local currentValue = Settings.CurrentValue or Settings.Minimum
+					local precision = Settings.Precision or 0
 					sliderValue.Text = tostring(math.round(currentValue * 10^precision) / 10^precision) .. (Settings.Suffix or "")
 
 					local sliderElementsUIListLayout = Instance.new("UIListLayout")
