@@ -1608,7 +1608,7 @@ function MacLib:Window(Settings)
 				section.Position = UDim2.fromScale(0, 6.78e-08)
 				section.Size = UDim2.fromScale(1, 0)
 				section.ClipsDescendants = true
-				section.Parent = Settings.Side == "Left" and left or right
+				section.Parent = Settings.CustomParent or (Settings.Side == "Left" and left or right)
 
 				local sectionUICorner = Instance.new("UICorner")
 				sectionUICorner.Name = "SectionUICorner"
@@ -6484,7 +6484,7 @@ function MacLib:Window(Settings)
 			dialogCanvas:Destroy()
 		end
 
-		for _, v in pairs(Settings.Buttons) do
+		for _, v in pairs(Settings.Buttons or {}) do
 			local button = Instance.new("TextButton")
 			button.Name = "Button"
 			button.FontFace = Font.new(assets.interFont)
@@ -6567,7 +6567,7 @@ function MacLib:Window(Settings)
 		function DialogFunctions:Cancel()
 				dialogOut()
 			end
-			DialogFunctions.PromptFrame = prompt
+			DialogFunctions.PromptFrame = prompt\n\t\t\tDialogFunctions.Interactions = interactions
 			return DialogFunctions
 	end
 
