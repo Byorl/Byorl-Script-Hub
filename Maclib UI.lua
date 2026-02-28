@@ -1645,7 +1645,7 @@ function MacLib:Window(Settings)
 					button.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					button.BorderSizePixel = 0
 					button.Size = UDim2.new(1, 0, 0, 38)
-					button.Parent = section
+					button.Parent = (self.Container or section)
 
 					local buttonInteract = Instance.new("TextButton")
 					buttonInteract.Name = "ButtonInteract"
@@ -1765,7 +1765,7 @@ function MacLib:Window(Settings)
 					toggle.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					toggle.BorderSizePixel = 0
 					toggle.Size = UDim2.new(1, 0, 0, Settings.Description and 52 or 38)
-					toggle.Parent = section
+					toggle.Parent = (self.Container or section)
 
 					local toggleName = Instance.new("TextLabel")
 					toggleName.Name = "ToggleName"
@@ -1893,26 +1893,60 @@ function MacLib:Window(Settings)
 					toggle1.MouseButton1Click:Connect(Toggle)
 
 					function ToggleFunctions:AddGear(Callback)
-						local gearBtn = Instance.new("ImageButton")
-						gearBtn.Name = "GearButton"
-						gearBtn.Image = "rbxassetid://10734950309"
-						gearBtn.Size = UDim2.fromOffset(24, 24)
-						gearBtn.Position = UDim2.new(1, -65, 0.5, 0)
-						gearBtn.AnchorPoint = Vector2.new(1, 0.5)
-						gearBtn.BackgroundTransparency = 1
-						gearBtn.ImageTransparency = 0.5
-						gearBtn.ZIndex = 3
-						gearBtn.Parent = toggle
-						
-						gearBtn.MouseEnter:Connect(function()
-							Tween(gearBtn, TweenInfo.new(0.3), {ImageTransparency = 0}):Play()
-						end)
-						gearBtn.MouseLeave:Connect(function()
-							Tween(gearBtn, TweenInfo.new(0.3), {ImageTransparency = 0.5}):Play()
-						end)
-						gearBtn.MouseButton1Click:Connect(Callback)
-						return gearBtn
-					end
+                                                local gearBtn = Instance.new("ImageButton")
+                                                gearBtn.Name = "GearButton"
+                                                gearBtn.Image = "rbxassetid://10734950309"
+                                                gearBtn.Size = UDim2.fromOffset(24, 24)
+                                                gearBtn.Position = UDim2.new(1, -65, 0.5, 0)
+                                                gearBtn.AnchorPoint = Vector2.new(1, 0.5)
+                                                gearBtn.BackgroundTransparency = 1
+                                                gearBtn.ImageTransparency = 0.5
+                                                gearBtn.ZIndex = 3
+                                                gearBtn.Parent = toggle
+
+                                                gearBtn.MouseEnter:Connect(function()
+                                                        Tween(gearBtn, TweenInfo.new(0.3), {ImageTransparency = 0}):Play()
+                                                end)
+                                                gearBtn.MouseLeave:Connect(function()
+                                                        Tween(gearBtn, TweenInfo.new(0.3), {ImageTransparency = 0.5}):Play()
+                                                end)
+                                                
+                                                local subMenu = Instance.new("Frame")
+                                                subMenu.Name = "SubMenu"
+                                                subMenu.AutomaticSize = Enum.AutomaticSize.Y
+                                                subMenu.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                                                subMenu.BackgroundTransparency = 0.8
+                                                subMenu.BorderSizePixel = 0
+                                                subMenu.Size = UDim2.new(1, 0, 0, 0)
+                                                subMenu.Visible = false
+                                                subMenu.Parent = toggle.Parent
+
+                                                local subMenuUICorner = Instance.new("UICorner")
+                                                subMenuUICorner.CornerRadius = UDim.new(0, 5)
+                                                subMenuUICorner.Parent = subMenu
+
+                                                local subMenuUIListLayout = Instance.new("UIListLayout")
+                                                subMenuUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                                                subMenuUIListLayout.Padding = UDim.new(0, 5)
+                                                subMenuUIListLayout.Parent = subMenu
+
+                                                local subMenuUIPadding = Instance.new("UIPadding")
+                                                subMenuUIPadding.PaddingLeft = UDim.new(0, 10)
+                                                subMenuUIPadding.PaddingRight = UDim.new(0, 10)
+                                                subMenuUIPadding.PaddingBottom = UDim.new(0, 10)
+                                                subMenuUIPadding.PaddingTop = UDim.new(0, 10)
+                                                subMenuUIPadding.Parent = subMenu
+
+                                                gearBtn.MouseButton1Click:Connect(function()
+                                                        subMenu.Visible = not subMenu.Visible
+                                                        if typeof(Callback) == "function" then
+                                                                Callback(subMenu.Visible)
+                                                        end
+                                                end)
+                                                
+                                                local SubElements = setmetatable({Container = subMenu}, {__index = SectionFunctions})
+                                                return SubElements
+                                        end
 
 					function ToggleFunctions:Toggle()
 						Toggle()
@@ -1991,7 +2025,7 @@ function MacLib:Window(Settings)
 					slider.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					slider.BorderSizePixel = 0
 					slider.Size = UDim2.new(1, 0, 0, 38)
-					slider.Parent = section
+					slider.Parent = (self.Container or section)
 
 					local sliderName = Instance.new("TextLabel")
 					sliderName.Name = "SliderName"
@@ -2296,7 +2330,7 @@ function MacLib:Window(Settings)
 					stepper.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					stepper.BorderSizePixel = 0
 					stepper.Size = UDim2.new(1, 0, 0, 38)
-					stepper.Parent = section
+					stepper.Parent = (self.Container or section)
 
 					local stepperName = Instance.new("TextLabel")
 					stepperName.Name = "StepperName"
@@ -2476,7 +2510,7 @@ function MacLib:Window(Settings)
 					input.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					input.BorderSizePixel = 0
 					input.Size = UDim2.new(1, 0, 0, 38)
-					input.Parent = section
+					input.Parent = (self.Container or section)
 
 					local inputName = Instance.new("TextLabel")
 					inputName.Name = "InputName"
@@ -2686,7 +2720,7 @@ function MacLib:Window(Settings)
 					keybind.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					keybind.BorderSizePixel = 0
 					keybind.Size = UDim2.new(1, 0, 0, 38)
-					keybind.Parent = section
+					keybind.Parent = (self.Container or section)
 
 					local keybindName = Instance.new("TextLabel")
 					keybindName.Name = "KeybindName"
@@ -2952,7 +2986,7 @@ function MacLib:Window(Settings)
 					dropdown.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					dropdown.BorderSizePixel = 0
 					dropdown.Size = UDim2.new(1, 0, 0, 38)
-					dropdown.Parent = section
+					dropdown.Parent = (self.Container or section)
 					dropdown.ClipsDescendants = true
 
 					local dropdownUIPadding = Instance.new("UIPadding")
@@ -3563,7 +3597,7 @@ function MacLib:Window(Settings)
 					colorpicker.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					colorpicker.BorderSizePixel = 0
 					colorpicker.Size = UDim2.new(1, 0, 0, 38)
-					colorpicker.Parent = section
+					colorpicker.Parent = (self.Container or section)
 
 					local colorpickerName = Instance.new("TextLabel")
 					colorpickerName.Name = "KeybindName"
@@ -4880,7 +4914,7 @@ function MacLib:Window(Settings)
 					header.BorderSizePixel = 0
 					header.LayoutOrder = 0
 					header.Size = UDim2.fromScale(1, 0)
-					header.Parent = section
+					header.Parent = (self.Container or section)
 
 					local uIPadding = Instance.new("UIPadding")
 					uIPadding.Name = "UIPadding"
@@ -4938,7 +4972,7 @@ function MacLib:Window(Settings)
 					label.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					label.BorderSizePixel = 0
 					label.Size = UDim2.new(1, 0, 0, 38)
-					label.Parent = section
+					label.Parent = (self.Container or section)
 
 					local labelText = Instance.new("TextLabel")
 					labelText.Name = "LabelText"
@@ -4988,7 +5022,7 @@ function MacLib:Window(Settings)
 					subLabel.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					subLabel.BorderSizePixel = 0
 					subLabel.Size = UDim2.new(1, 0, 0, 0)
-					subLabel.Parent = section
+					subLabel.Parent = (self.Container or section)
 
 					local subLabelText = Instance.new("TextLabel")
 					subLabelText.Name = "SubLabelText"
@@ -5038,7 +5072,7 @@ function MacLib:Window(Settings)
 					paragraph.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					paragraph.BorderSizePixel = 0
 					paragraph.Size = UDim2.new(1, 0, 0, 38)
-					paragraph.Parent = section
+					paragraph.Parent = (self.Container or section)
 
 					local paragraphHeader = Instance.new("TextLabel")
 					paragraphHeader.Name = "ParagraphHeader"
@@ -5117,7 +5151,7 @@ function MacLib:Window(Settings)
 					divider.BorderSizePixel = 0
 					divider.Position = UDim2.fromScale(0, 1)
 					divider.Size = UDim2.new(1, 0, 0, 1)
-					divider.Parent = section
+					divider.Parent = (self.Container or section)
 
 					local uIPadding = Instance.new("UIPadding")
 					uIPadding.Name = "UIPadding"
@@ -5199,7 +5233,7 @@ function MacLib:Window(Settings)
 					spacer.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					spacer.BorderSizePixel = 0
 					spacer.Position = UDim2.fromScale(0, 1)
-					spacer.Parent = section
+					spacer.Parent = (self.Container or section)
 
 					function SpacerFunctions:Remove()
 						spacer:Destroy()
@@ -5224,7 +5258,7 @@ function MacLib:Window(Settings)
 					progressOuter.BackgroundTransparency = 1
 					progressOuter.BorderSizePixel = 0
 					progressOuter.Size = UDim2.new(1, 0, 0, 0)
-					progressOuter.Parent = section
+					progressOuter.Parent = (self.Container or section)
 
 					local progressOuterUIListLayout = Instance.new("UIListLayout")
 					progressOuterUIListLayout.Padding = UDim.new(0, 6)
@@ -5347,7 +5381,7 @@ function MacLib:Window(Settings)
 					multiSlider.BackgroundTransparency = 1
 					multiSlider.BorderSizePixel = 0
 					multiSlider.Size = UDim2.new(1, 0, 0, 38)
-					multiSlider.Parent = section
+					multiSlider.Parent = (self.Container or section)
 
 					local multiSliderName = Instance.new("TextLabel")
 					multiSliderName.Name = "MultiSliderName"
@@ -5595,7 +5629,7 @@ function MacLib:Window(Settings)
 					rgFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					rgFrame.BorderSizePixel = 0
 					rgFrame.Size = UDim2.new(1, 0, 0, 38)
-					rgFrame.Parent = section
+					rgFrame.Parent = (self.Container or section)
 
 					local rgName = Instance.new("TextLabel")
 					rgName.Name = "RadioGroupName"
@@ -5751,6 +5785,7 @@ function MacLib:Window(Settings)
 					end
 				end
 
+                                SectionFunctions.Frame = section
 				return SectionFunctions
 			end
 
@@ -6530,10 +6565,10 @@ function MacLib:Window(Settings)
 		end
 
 		function DialogFunctions:Cancel()
-			dialogOut()
-		end
-
-		return DialogFunctions
+				dialogOut()
+			end
+			DialogFunctions.PromptFrame = prompt
+			return DialogFunctions
 	end
 
 	function WindowFunctions:SetNotificationsState(State)
@@ -6723,9 +6758,22 @@ function MacLib:Window(Settings)
 				tabSwitchersScrollingFrame.Size = UDim2.new(1, 0, 1, -34)
 				tabSwitchersScrollingFrame.Position = UDim2.fromOffset(0, 34)
 				sbInput:GetPropertyChangedSignal("Text"):Connect(function()
-					local query = sbInput.Text:lower()
+					local query = sbInput.Text:lower():gsub("%s+", "")
 					for tabInst, info in pairs(tabs) do
-						tabInst.Visible = query == "" or (info.name:lower():find(query, 1, true) ~= nil)
+						local tabName = info.name:lower():gsub("%s+", "")
+						local match = query == "" or (tabName:find(query, 1, true) ~= nil)
+						if not match and query ~= "" then
+							for _, desc in ipairs(info.tabContent:GetDescendants()) do
+								if desc:IsA("TextLabel") or desc:IsA("TextButton") then
+									local txt = desc.Text:lower():gsub("%s+", "")
+									if txt:find(query, 1, true) ~= nil then
+										match = true
+										break
+									end
+								end
+							end
+						end
+						tabInst.Visible = match
 					end
 				end)
 				WindowFunctions._searchBar = sb
