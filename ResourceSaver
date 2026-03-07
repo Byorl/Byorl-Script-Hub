@@ -1,17 +1,33 @@
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
+local defaultFpsCap = 60
+local unfocusedFpsCap = 20
+
 if getgenv().fpscap == nil then
-    getgenv().fpscap = 60
+    getgenv().fpscap = defaultFpsCap
 end
 
-local function ApplySettings(focused)
-    if focused then
-        RunService:Set3dRenderingEnabled(true)
-        setfpscap(getgenv().fpscap)
+local hasSetFpsCap = type(setfpscap) == "function"
+if not hasSetFpsCap then
+    warn("[Performance Script] 'setfpscap' is not supported on your executor.")
+end
+
+local function SafeSetFpsCap(cap)
+    if hasSetFpsCap then
+        pcall(setfpscap, cap)
+    end
+end
+
+local function ApplySettings(isFocused)
+    pcall(function()
+        RunService:Set3dRenderingEnabled(isFocused)
+    end)
+
+    if isFocused then
+        SafeSetFpsCap(getgenv().fpscap)
     else
-        RunService:Set3dRenderingEnabled(false)
-        setfpscap(20)
+        SafeSetFpsCap(unfocusedFpsCap)
     end
 end
 
@@ -23,12 +39,4 @@ UserInputService.WindowFocusReleased:Connect(function()
     ApplySettings(false)
 end)
 
-ApplySettings(false)
-
-task.spawn(function()
-    while task.wait(1) do
-        if UserInputService:GetFocusedWidget() then
-            setfpscap(getgenv().fpscap)
-        end
-    end
-end)
+ApplySettings(true)
