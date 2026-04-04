@@ -1,8 +1,8 @@
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
-local defaultFpsCap = 30
-local unfocusedFpsCap = 5
+local defaultFpsCap = 60
+local unfocusedFpsCap = 10
 
 if getgenv().fpscap == nil then
     getgenv().fpscap = defaultFpsCap
