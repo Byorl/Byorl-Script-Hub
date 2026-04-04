@@ -39,4 +39,4 @@ UserInputService.WindowFocusReleased:Connect(function()
     ApplySettings(false)
 end)
 
-ApplySettings(true)
+ApplySettings(false)
