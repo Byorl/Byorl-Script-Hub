@@ -4,14 +4,18 @@ local RunService = game:GetService("RunService")
 local defaultFpsCap = 60
 local unfocusedFpsCap = 15
 
+if getgenv().PerformanceScriptConnections then
+    for _, connection in pairs(getgenv().PerformanceScriptConnections) do
+        connection:Disconnect()
+    end
+end
+getgenv().PerformanceScriptConnections = {}
+
 if getgenv().fpscap == nil then
     getgenv().fpscap = defaultFpsCap
 end
 
 local hasSetFpsCap = type(setfpscap) == "function"
-if not hasSetFpsCap then
-    warn("[Performance Script] 'setfpscap' is not supported on your executor.")
-end
 
 local function SafeSetFpsCap(cap)
     if hasSetFpsCap then
@@ -31,12 +35,14 @@ local function ApplySettings(isFocused)
     end
 end
 
-UserInputService.WindowFocused:Connect(function()
+table.insert(getgenv().PerformanceScriptConnections, UserInputService.WindowFocused:Connect(function()
     ApplySettings(true)
-end)
+end))
 
-UserInputService.WindowFocusReleased:Connect(function()
+table.insert(getgenv().PerformanceScriptConnections, UserInputService.WindowFocusReleased:Connect(function()
     ApplySettings(false)
-end)
+end))
 
-ApplySettings(false)
+ApplySettings(not UserInputService:GetFocusedWidget() == nil) 
+
+warn("[Performance Script] Aktiv og optimalisert.")
