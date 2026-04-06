@@ -43,6 +43,4 @@ table.insert(getgenv().PerformanceScriptConnections, UserInputService.WindowFocu
     ApplySettings(false)
 end))
 
-ApplySettings(not UserInputService:GetFocusedWidget() == nil) 
-
-warn("[Performance Script] Aktiv og optimalisert.")
+ApplySettings(UserInputService:GetFocusedWidget() ~= nil)
