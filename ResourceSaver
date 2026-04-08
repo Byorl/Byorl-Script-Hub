@@ -1,61 +1,37 @@
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
-local LOW_CPU_FPS = 5
-local LOW_CPU_WAIT_TIME = 1 / LOW_CPU_FPS
+local maxActiveFps = math.huge
+local inactiveFps = 15
 
-local renderingEnabled = true
-local cpuThrottleConnection = nil
-
-local function enableLowCPU()
-	if cpuThrottleConnection then return end
-	cpuThrottleConnection = RunService.Heartbeat:Connect(function()
-		task.wait(LOW_CPU_WAIT_TIME)
-	end)
+local function onTabbedOut()
+    pcall(function()
+        RunService:Set3dRenderingEnabled(false)
+    end)
+    
+    if setfpscap then
+        setfpscap(inactiveFps)
+    end
+    
+    pcall(function()
+        collectgarbage("collect")
+    end)
 end
 
-local function disableLowCPU()
-	if cpuThrottleConnection then
-		cpuThrottleConnection:Disconnect()
-		cpuThrottleConnection = nil
-	end
+local function onTabbedIn()
+    pcall(function()
+        RunService:Set3dRenderingEnabled(true)
+    end)
+    
+    if setfpscap then
+        setfpscap(maxActiveFps)
+    end
 end
 
-local function set3DRendering(enabled)
-	if renderingEnabled == enabled then return end
-	renderingEnabled = enabled
-	RunService:Set3dRenderingEnabled(enabled)
+UserInputService.WindowFocusReleased:Connect(onTabbedOut)
+UserInputService.WindowFocused:Connect(onTabbedIn)
+
+if not UserInputService:GetFocused() then
+    onTabbedOut()
 end
 
-local function onWindowFocusLost()
-	set3DRendering(false)
-	enableLowCPU()
-end
-
-local function onWindowFocusGained()
-	set3DRendering(true)
-	disableLowCPU()
-end
-
-UserInputService.WindowFocusReleased:Connect(onWindowFocusLost)
-UserInputService.WindowFocused:Connect(onWindowFocusGained)
-
-if not UserInputService.WindowFocused then
-	onWindowFocusLost()
-else
-	onWindowFocusGained()
-end
-
-task.spawn(function()
-	while true do
-		task.wait(1)
-		local isFocused = UserInputService.WindowFocused
-		if (isFocused and not renderingEnabled) or (not isFocused and renderingEnabled) then
-			if isFocused then
-				onWindowFocusGained()
-			else
-				onWindowFocusLost()
-			end
-		end
-	end
-end)
