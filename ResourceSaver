@@ -1,28 +1,16 @@
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
-local maxActiveFps = math.huge
-local inactiveFps = 5
+local maxActiveFps = 0
+local inactiveFps = 15
 
 local function onTabbedOut()
-    pcall(function()
-        RunService:Set3dRenderingEnabled(false)
-    end)
-    
     if setfpscap then
         setfpscap(inactiveFps)
     end
-    
-    pcall(function()
-        collectgarbage("collect")
-    end)
 end
 
 local function onTabbedIn()
-    pcall(function()
-        RunService:Set3dRenderingEnabled(true)
-    end)
-    
     if setfpscap then
         setfpscap(maxActiveFps)
     end
@@ -34,4 +22,3 @@ UserInputService.WindowFocused:Connect(onTabbedIn)
 if not UserInputService:GetFocused() then
     onTabbedOut()
 end
-
