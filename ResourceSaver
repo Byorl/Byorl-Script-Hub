@@ -45,3 +45,17 @@ if not UserInputService.WindowFocused then
 else
 	onWindowFocusGained()
 end
+
+task.spawn(function()
+	while true do
+		task.wait(1)
+		local isFocused = UserInputService.WindowFocused
+		if (isFocused and not renderingEnabled) or (not isFocused and renderingEnabled) then
+			if isFocused then
+				onWindowFocusGained()
+			else
+				onWindowFocusLost()
+			end
+		end
+	end
+end)
