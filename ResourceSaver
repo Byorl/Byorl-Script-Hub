@@ -2,7 +2,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local maxActiveFps = math.huge
-local inactiveFps = 15
+local inactiveFps = 5
 
 local function onTabbedOut()
     pcall(function()
