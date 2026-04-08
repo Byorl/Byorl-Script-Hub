@@ -1,46 +1,47 @@
-local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
-local defaultFpsCap = 60
-local unfocusedFpsCap = 15
+local LOW_CPU_FPS = 5
+local LOW_CPU_WAIT_TIME = 1 / LOW_CPU_FPS
 
-if getgenv().PerformanceScriptConnections then
-    for _, connection in pairs(getgenv().PerformanceScriptConnections) do
-        connection:Disconnect()
-    end
-end
-getgenv().PerformanceScriptConnections = {}
+local renderingEnabled = true
+local cpuThrottleConnection = nil
 
-if getgenv().fpscap == nil then
-    getgenv().fpscap = defaultFpsCap
-end
-
-local hasSetFpsCap = type(setfpscap) == "function"
-
-local function SafeSetFpsCap(cap)
-    if hasSetFpsCap then
-        pcall(setfpscap, cap)
-    end
+local function enableLowCPU()
+	if cpuThrottleConnection then return end
+	cpuThrottleConnection = RunService.Heartbeat:Connect(function()
+		task.wait(LOW_CPU_WAIT_TIME)
+	end)
 end
 
-local function ApplySettings(isFocused)
-    pcall(function()
-        RunService:Set3dRenderingEnabled(isFocused)
-    end)
-
-    if isFocused then
-        SafeSetFpsCap(getgenv().fpscap)
-    else
-        SafeSetFpsCap(unfocusedFpsCap)
-    end
+local function disableLowCPU()
+	if cpuThrottleConnection then
+		cpuThrottleConnection:Disconnect()
+		cpuThrottleConnection = nil
+	end
 end
 
-table.insert(getgenv().PerformanceScriptConnections, UserInputService.WindowFocused:Connect(function()
-    ApplySettings(true)
-end))
+local function set3DRendering(enabled)
+	if renderingEnabled == enabled then return end
+	renderingEnabled = enabled
+	RunService:Set3dRenderingEnabled(enabled)
+end
 
-table.insert(getgenv().PerformanceScriptConnections, UserInputService.WindowFocusReleased:Connect(function()
-    ApplySettings(false)
-end))
+local function onWindowFocusLost()
+	set3DRendering(false)
+	enableLowCPU()
+end
 
-ApplySettings(UserInputService:GetFocusedWidget() ~= nil)
+local function onWindowFocusGained()
+	set3DRendering(true)
+	disableLowCPU()
+end
+
+UserInputService.WindowFocusReleased:Connect(onWindowFocusLost)
+UserInputService.WindowFocused:Connect(onWindowFocusGained)
+
+if not UserInputService.WindowFocused then
+	onWindowFocusLost()
+else
+	onWindowFocusGained()
+end
