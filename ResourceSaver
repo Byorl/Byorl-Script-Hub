@@ -5,12 +5,20 @@ local maxActiveFps = 60
 local inactiveFps = 15
 
 local function onTabbedOut()
+    pcall(function()
+        RunService:Set3dRenderingEnabled(false)
+    end)
+    
     if setfpscap then
         setfpscap(inactiveFps)
     end
 end
 
 local function onTabbedIn()
+    pcall(function()
+        RunService:Set3dRenderingEnabled(true)
+    end)
+    
     if setfpscap then
         setfpscap(maxActiveFps)
     end
@@ -19,6 +27,4 @@ end
 UserInputService.WindowFocusReleased:Connect(onTabbedOut)
 UserInputService.WindowFocused:Connect(onTabbedIn)
 
-if not UserInputService:GetFocused() then
-    onTabbedOut()
-end
+onTabbedOut()
